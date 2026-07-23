@@ -63,7 +63,7 @@ function ProductModal({ product, onClose, onSave }) {
       mrp: form.mrp ? parseFloat(form.mrp) : null,
     }
 
-    const url = isEdit ? `${import.meta.env.VITE_API_URL || ''}/api/admin/products/${form.id}` : `${import.meta.env.VITE_API_URL || ''}/api/admin/products`
+    const url = isEdit ? `${import.meta.env.VITE_API_URL || ''}/api/admin/products/${form._id}` : `${import.meta.env.VITE_API_URL || ''}/api/admin/products`
     const method = isEdit ? 'PUT' : 'POST'
 
     try {
@@ -200,7 +200,7 @@ export default function AdminProducts() {
   useEffect(() => { fetchProducts() }, [token])
 
   const handleDelete = async (productId) => {
-    if (!window.confirm(`Delete product "${productId}"?`)) return
+    if (!window.confirm(`Delete this product?`)) return
     setDeletingId(productId)
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/products/${productId}`, {
@@ -208,7 +208,7 @@ export default function AdminProducts() {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
-        setProducts(prev => prev.filter(p => p.id !== productId))
+        setProducts(prev => prev.filter(p => p._id !== productId))
       } else {
         const d = await res.json()
         alert(d.message)
@@ -334,10 +334,10 @@ export default function AdminProducts() {
                         </button>
                         <button
                           className="px-3 py-1.5 rounded-lg font-semibold text-[13px] bg-error-container text-error hover:bg-error-container/80 transition-colors border-none cursor-pointer flex items-center gap-1 disabled:opacity-50"
-                          onClick={() => handleDelete(product.id)}
-                          disabled={deletingId === product.id}
+                          onClick={() => handleDelete(product._id)}
+                          disabled={deletingId === product._id}
                         >
-                          {deletingId === product.id ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> : <span className="material-symbols-outlined text-[16px]">delete</span>}
+                          {deletingId === product._id ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> : <span className="material-symbols-outlined text-[16px]">delete</span>}
                         </button>
                       </div>
                     </td>

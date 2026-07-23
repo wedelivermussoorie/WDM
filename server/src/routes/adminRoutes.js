@@ -107,8 +107,8 @@ router.post("/products", async (req, res) => {
 
 router.put("/products/:id", async (req, res) => {
   try {
-    const product = await Product.findOneAndUpdate(
-      { id: req.params.id },
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
       { $set: req.body },
       { new: true, runValidators: true }
     );
@@ -121,7 +121,7 @@ router.put("/products/:id", async (req, res) => {
 
 router.delete("/products/:id", async (req, res) => {
   try {
-    const product = await Product.findOneAndDelete({ id: req.params.id });
+    const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json({ message: "Product deleted" });
   } catch (err) {
