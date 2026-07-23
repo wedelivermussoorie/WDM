@@ -5,7 +5,7 @@ const sendEmail = require("./sendEmail");
  * @param {Object} user  - { name, email }
  * @param {Object} order - Mongoose Order document
  */
-async function sendOrderConfirmationEmail(user, order) {
+async function sendOrderConfirmationEmail(user, order, invoiceBuffer) {
   const itemsHtml = order.items
     .map(
       (item) => `
@@ -39,7 +39,7 @@ async function sendOrderConfirmationEmail(user, order) {
       <!-- Body -->
       <div style="padding: 28px 32px;">
         <p style="font-size: 16px; color: #374151;">Hi <strong>${user.name}</strong>,</p>
-        <p style="font-size: 15px; color: #4b5563;">Your order has been placed successfully! Here's a summary:</p>
+        <p style="font-size: 15px; color: #4b5563;">Your order has been placed successfully! Please find your invoice attached. Here's a summary:</p>
 
         <!-- Order Meta -->
         <table style="width:100%;font-size:14px;color:#374151;margin-bottom:20px;">
@@ -104,11 +104,22 @@ async function sendOrderConfirmationEmail(user, order) {
     </div>
   `;
 
-  await sendEmail({
+  const emailOptions = {
     to: user.email,
     subject: `Order Confirmed – #${order._id.toString().slice(-8).toUpperCase()} | We Deliver Mussoorie`,
     html,
-  });
+  };
+
+  if (invoiceBuffer) {
+    emailOptions.attachments = [
+      {
+        filename: \`Invoice_\${order._id.toString().slice(-8).toUpperCase()}.pdf\`,
+        content: invoiceBuffer,
+      },
+    ];
+  }
+
+  await sendEmail(emailOptions);
 }
 
 /**

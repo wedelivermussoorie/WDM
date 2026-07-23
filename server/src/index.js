@@ -188,10 +188,14 @@ app.post("/api/orders", protect, async (req, res) => {
       throw saveError;
     }
 
-    // Send Order Confirmation Email asynchronously
+    // Generate Invoice and Send Order Confirmation Email asynchronously
     const { sendOrderConfirmationEmail } = require("./utils/emailTemplates");
-    sendOrderConfirmationEmail(req.user, createdOrder).catch((err) => {
-      console.error("Failed to send order confirmation email:", err);
+    const generateInvoice = require("./utils/generateInvoice");
+    
+    generateInvoice(createdOrder, req.user).then((invoiceBuffer) => {
+      return sendOrderConfirmationEmail(req.user, createdOrder, invoiceBuffer);
+    }).catch((err) => {
+      console.error("Failed to send order confirmation email with invoice:", err);
     });
 
     res.status(201).json(createdOrder);
@@ -287,10 +291,14 @@ app.post("/api/orders/verify", protect, async (req, res) => {
       throw saveError;
     }
 
-    // Send Order Confirmation Email asynchronously
+    // Generate Invoice and Send Order Confirmation Email asynchronously
     const { sendOrderConfirmationEmail } = require("./utils/emailTemplates");
-    sendOrderConfirmationEmail(req.user, createdOrder).catch((err) => {
-      console.error("Failed to send order confirmation email:", err);
+    const generateInvoice = require("./utils/generateInvoice");
+    
+    generateInvoice(createdOrder, req.user).then((invoiceBuffer) => {
+      return sendOrderConfirmationEmail(req.user, createdOrder, invoiceBuffer);
+    }).catch((err) => {
+      console.error("Failed to send order confirmation email with invoice:", err);
     });
 
     res.status(201).json({ message: "Payment verified successfully", order: createdOrder });

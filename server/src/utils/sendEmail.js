@@ -9,13 +9,19 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * @param {string} options.subject - Email subject
  * @param {string} options.html - HTML body
  */
-async function sendEmail({ to, subject, html }) {
-  const { error } = await resend.emails.send({
+async function sendEmail({ to, subject, html, attachments }) {
+  const payload = {
     from: "We Deliver Mussoorie <noreply@wedelivermussoorie.com>",
     to,
     subject,
     html,
-  });
+  };
+
+  if (attachments) {
+    payload.attachments = attachments;
+  }
+
+  const { error } = await resend.emails.send(payload);
 
   if (error) {
     throw new Error(`Resend error: ${error.message}`);
