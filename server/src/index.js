@@ -234,14 +234,7 @@ app.get("/api/razorpay/key", protect, (req, res) => {
 // Razorpay Verify Signature and Save Order
 app.post("/api/orders/verify", protect, async (req, res) => {
   try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      items,
-      totalAmount,
-      shippingAddress,
-    } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, items, totalAmount, shippingAddress } = req.body;
 
     const sign = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSign = crypto
@@ -303,6 +296,7 @@ app.post("/api/orders/verify", protect, async (req, res) => {
 
     res.status(201).json({ message: "Payment verified successfully", order: createdOrder });
   } catch (error) {
+    console.error("Razorpay Verification Error:", error);
     res.status(500).json({ message: "Payment verification failed", error: error.message });
   }
 });

@@ -113,7 +113,7 @@ async function sendOrderConfirmationEmail(user, order, invoiceBuffer) {
   if (invoiceBuffer) {
     emailOptions.attachments = [
       {
-        filename: \`Invoice_\${order._id.toString().slice(-8).toUpperCase()}.pdf\`,
+        filename: `Invoice_${order._id.toString().slice(-8).toUpperCase()}.pdf`,
         content: invoiceBuffer,
       },
     ];
