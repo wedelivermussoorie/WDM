@@ -9,6 +9,7 @@ import Grocery from './pages/Grocery'
 import Food from './pages/Food'
 import Essentials from './pages/Essentials'
 import Bakery from './pages/Bakery'
+import AdultsOnly from './pages/AdultsOnly'
 import LoginRegister from './pages/LoginRegister'
 import Cart from './pages/Cart'
 import Wishlist from './pages/Wishlist'
@@ -61,6 +62,7 @@ function App() {
                   <Route path="/food" element={<Food />} />
                   <Route path="/essentials" element={<Essentials />} />
                   <Route path="/bakery" element={<Bakery />} />
+                  <Route path="/18-plus" element={<AdultsOnly />} />
                   <Route path="/login" element={<LoginRegister />} />
                   <Route path="/verify-email" element={<VerifyEmail />} />
                   <Route path="/cart" element={<Cart />} />

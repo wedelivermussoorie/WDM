@@ -22,6 +22,7 @@ function sanitizeUser(user) {
     phone: user.phone,
     isAdmin: user.isAdmin,
     isVerified: user.isVerified,
+    isAdultVerified: user.isAdultVerified,
     addresses: user.addresses,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -402,6 +403,18 @@ async function updateCurrentUserAddresses(req, res) {
   }
 }
 
+// ─── VERIFY AGE ───────────────────────────────────────────────
+async function verifyAge(req, res) {
+  try {
+    const user = req.user;
+    user.isAdultVerified = true;
+    await user.save();
+    res.json({ message: "Age verified successfully", user: sanitizeUser(user) });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to verify age", error: error.message });
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
@@ -410,4 +423,5 @@ module.exports = {
   updateCurrentUserAddresses,
   verifyOtp,
   resendVerificationEmail,
+  verifyAge,
 };

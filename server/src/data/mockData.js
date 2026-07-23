@@ -15,8 +15,8 @@ const categories = [
     items: ["Daily Essentials", "Medicines"],
   },
   {
-    id: "pan-corner",
-    title: "Pan Corner",
+    id: "18+",
+    title: "18+",
     items: [],
   },
   {

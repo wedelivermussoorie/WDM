@@ -7,6 +7,7 @@ function Sidebar({ isOpen, onClose }) {
     { label: 'FOOD', path: '/food' },
     { label: 'ESSENTIALS', path: '/essentials' },
     { label: 'BAKERY', path: '/bakery' },
+    { label: '18+', path: '/18-plus' },
   ]
 
   return (

@@ -63,6 +63,10 @@ const userSchema = new mongoose.Schema(
       billing: { type: addressSchema, default: undefined },
       shipping: { type: addressSchema, default: undefined },
     },
+    isAdultVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

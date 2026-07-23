@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from './AdminLayout'
 import { useAuth } from '../context/AuthContext'
 
-const CATEGORIES = ['grocery', 'food', 'essentials', 'bakery', 'pan-corner']
+const CATEGORIES = ['grocery', 'food', 'essentials', 'bakery', '18+']
 const EMPTY_FORM = { id: '', name: '', category: 'grocery', price: '', quantity: '', mrp: '', unit: '', imageUrl: '', badge: '' }
 
 function ProductModal({ product, onClose, onSave }) {

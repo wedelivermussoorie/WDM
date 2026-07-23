@@ -6,7 +6,8 @@ const CATEGORY_ICONS = {
   grocery: 'shopping_basket',
   food: 'restaurant',
   essentials: 'inventory_2',
-  bakery: 'cake'
+  bakery: 'cake',
+  '18+': 'warning'
 }
 
 function CategoryPage({ category }) {
