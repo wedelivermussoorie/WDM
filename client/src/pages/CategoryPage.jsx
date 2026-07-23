@@ -14,7 +14,7 @@ function CategoryPage({ category }) {
   const [products, setProducts] = useState([])
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=${category}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=${encodeURIComponent(category)}`)
       .then((r) => r.json())
       .then((data) => {
         setProducts(Array.isArray(data) ? data : [])
