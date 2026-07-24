@@ -16,10 +16,11 @@ export default function ProductCard({ product }) {
   const { addToCart } = useCart()
   const { toggleWishlist, isInWishlist } = useWishlist()
   const inWishlist = isInWishlist(product.id)
+  const productDetailId = product._id || product.id?.trim()
 
   return (
     <div className="group bg-surface-container-lowest rounded-lg overflow-hidden border border-outline-variant/20 shadow-sm hover:shadow-lg transition-all flex flex-col h-full">
-      <Link to={`/product/${product.id}`} className="block no-underline text-on-background flex-1 relative">
+      <Link to={`/product/${encodeURIComponent(productDetailId || '')}`} className="block no-underline text-on-background flex-1 relative">
         {/* Badge */}
         {product.badge && (
           <span className="absolute top-2 left-2 z-10 bg-error text-white text-label-sm px-2 py-0.5 rounded-full">

@@ -23,7 +23,7 @@ function ProductPage() {
   useEffect(() => {
     setStatus('loading')
 
-    fetch(`${import.meta.env.VITE_API_URL || ''}/api/products/${productId}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/products/${encodeURIComponent(productId)}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error('Product not found')
@@ -198,4 +198,3 @@ function ProductPage() {
 }
 
 export default ProductPage
-

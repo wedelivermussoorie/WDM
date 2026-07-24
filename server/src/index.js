@@ -140,7 +140,21 @@ app.get("/api/products", async (req, res) => {
 
 app.get("/api/products/:id", async (req, res) => {
   try {
-    const product = await Product.findOne({ id: req.params.id });
+    const requestedId = typeof req.params.id === "string" ? req.params.id : "";
+    const normalizedId = requestedId.trim();
+
+    let product = null;
+
+    if (/^[a-fA-F0-9]{24}$/.test(requestedId)) {
+      product = await Product.findById(requestedId);
+    }
+
+    if (!product) {
+      product = await Product.findOne({
+        $or: [{ id: requestedId }, { id: normalizedId }],
+      });
+    }
+
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
