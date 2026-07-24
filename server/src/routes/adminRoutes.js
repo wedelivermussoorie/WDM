@@ -91,14 +91,14 @@ router.get("/products", async (req, res) => {
 
 router.post("/products", async (req, res) => {
   try {
-    const { id, name, category, price, quantity, mrp, unit, imageUrl, badge } = req.body;
+    const { id, name, category, subsection, price, quantity, mrp, unit, imageUrl, badge } = req.body;
     if (!id || !name || !category || !price || quantity === undefined || !imageUrl) {
       return res.status(400).json({ message: "id, name, category, price, quantity, imageUrl are required" });
     }
     const existing = await Product.findOne({ id });
     if (existing) return res.status(409).json({ message: "Product ID already exists" });
 
-    const product = await Product.create({ id, name, category, price, quantity, mrp, unit, imageUrl, badge });
+    const product = await Product.create({ id, name, category, subsection: subsection || null, price, quantity, mrp, unit, imageUrl, badge });
     res.status(201).json(product);
   } catch (err) {
     res.status(500).json({ message: "Server Error", error: err.message });

@@ -42,9 +42,10 @@ function ProductPage() {
 
   const breadcrumbs = useMemo(() => {
     if (!product) return []
+    const categoryPath = product.category === '18+' ? '/18-plus' : `/${product.category.toLowerCase()}`
     return [
       { label: 'Home', path: '/' },
-      { label: product.category.charAt(0).toUpperCase() + product.category.slice(1), path: `/${product.category.toLowerCase()}` },
+      { label: product.category.charAt(0).toUpperCase() + product.category.slice(1), path: categoryPath },
       { label: product.name, path: null },
     ]
   }, [product])

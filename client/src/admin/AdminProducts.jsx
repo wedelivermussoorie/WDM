@@ -3,19 +3,102 @@ import AdminLayout from './AdminLayout'
 import { useAuth } from '../context/AuthContext'
 
 const CATEGORIES = ['grocery', 'food', 'essentials', 'bakery', '18+']
-const EMPTY_FORM = { id: '', name: '', category: 'grocery', price: '', quantity: '', mrp: '', unit: '', imageUrl: '', badge: '' }
+const SUBSECTIONS_BY_CATEGORY = {
+  grocery: [
+    { value: 'fresh-vegetables', label: 'Fresh Vegetables' },
+    { value: 'atta-dal-rice', label: 'Atta, Dal & Rice' },
+    { value: 'masalas-oils', label: 'Masalas & Oils' },
+    { value: 'party-celebrations', label: 'Party & Celebrations' },
+  ],
+  food: [
+    { value: 'drinks-beverages', label: 'Drinks & Beverages' },
+    { value: 'chips-namkeens', label: 'Chips & Namkeens' },
+    { value: 'sweets-chocolates', label: 'Sweets & Chocolates' },
+    { value: 'instant-food-noodles', label: 'Instant Food & Noodles' },
+  ],
+  essentials: [
+    { value: 'personal-care', label: 'Personal Care' },
+    { value: 'home-cleaning', label: 'Home & Cleaning' },
+    { value: 'baby-care', label: 'Baby Care' },
+    { value: 'stationery', label: 'Stationery' },
+  ],
+  bakery: [
+    { value: 'dairy-bread-milk', label: 'Dairy, Bread & Milk' },
+    { value: 'bakery-biscuits', label: 'Bakery & Biscuits' },
+  ],
+  '18+': [
+    { value: 'female-wellness', label: 'Female Wellness' },
+    { value: 'pleasure-protection', label: 'Pleasure & Protection' },
+  ],
+}
+
+const CUSTOM_SUBSECTION_VALUE = '__custom__'
+const EMPTY_FORM = { id: '', name: '', category: 'grocery', subsection: null, price: '', quantity: '', mrp: '', unit: '', imageUrl: '', badge: '' }
+
+function getSubsectionOptions(category) {
+  const key = typeof category === 'string' ? category : ''
+  return SUBSECTIONS_BY_CATEGORY[key] || []
+}
+
+function getSubsectionPreset(subsection, category) {
+  if (!subsection) return ''
+  const options = getSubsectionOptions(category)
+  const match = options.some((o) => o.value === subsection)
+  return match ? subsection : CUSTOM_SUBSECTION_VALUE
+}
+
+function getSubsectionLabel(category, subsection) {
+  if (!subsection) return null
+  const options = getSubsectionOptions(category)
+  const match = options.find((o) => o.value === subsection)
+  return match ? match.label : subsection
+}
 
 function ProductModal({ product, onClose, onSave }) {
-  const [form, setForm] = useState(product ? { ...product } : { ...EMPTY_FORM })
+  const initialForm = product ? { ...product } : { ...EMPTY_FORM }
+  const [form, setForm] = useState(initialForm)
+  const [subsectionPreset, setSubsectionPreset] = useState(getSubsectionPreset(initialForm.subsection, initialForm.category))
+  const [customSubsection, setCustomSubsection] = useState(subsectionPreset === CUSTOM_SUBSECTION_VALUE ? (initialForm.subsection || '') : '')
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState(null)
   const { token } = useAuth()
   const isEdit = !!product
 
+  useEffect(() => {
+    const nextForm = product ? { ...product } : { ...EMPTY_FORM }
+    setForm(nextForm)
+    const nextPreset = getSubsectionPreset(nextForm.subsection, nextForm.category)
+    setSubsectionPreset(nextPreset)
+    setCustomSubsection(nextPreset === CUSTOM_SUBSECTION_VALUE ? (nextForm.subsection || '') : '')
+  }, [product])
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleCategoryChange = (e) => {
+    const nextCategory = e.target.value
+    const currentNormalizedSubsection = (() => {
+      if (subsectionPreset === CUSTOM_SUBSECTION_VALUE) {
+        const v = String(customSubsection || '').trim()
+        return v ? v : null
+      }
+      const v = String(subsectionPreset || '').trim()
+      return v ? v : null
+    })()
+
+    const nextPreset = getSubsectionPreset(currentNormalizedSubsection, nextCategory)
+    const nextCustom = nextPreset === CUSTOM_SUBSECTION_VALUE ? (currentNormalizedSubsection || '') : ''
+
+    setSubsectionPreset(nextPreset)
+    setCustomSubsection(nextCustom)
+    setForm((prev) => ({
+      ...prev,
+      category: nextCategory,
+      subsection: nextPreset === CUSTOM_SUBSECTION_VALUE ? (nextCustom || null) : (nextPreset || null),
+    }))
   }
 
   const handleImageUpload = async (e) => {
@@ -56,8 +139,18 @@ function ProductModal({ product, onClose, onSave }) {
       return
     }
 
+    const normalizedSubsection = (() => {
+      if (subsectionPreset === CUSTOM_SUBSECTION_VALUE) {
+        const v = String(customSubsection || '').trim()
+        return v ? v : null
+      }
+      const v = String(subsectionPreset || '').trim()
+      return v ? v : null
+    })()
+
     const payload = {
       ...form,
+      subsection: normalizedSubsection,
       price: parseFloat(form.price),
       quantity: parseInt(form.quantity || 0, 10),
       mrp: form.mrp ? parseFloat(form.mrp) : null,
@@ -102,10 +195,48 @@ function ProductModal({ product, onClose, onSave }) {
               </div>
               <div className="space-y-1.5">
                 <label className="block text-label-sm font-semibold text-on-surface-variant pl-1">Category *</label>
-                <select className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background appearance-none" name="category" value={form.category} onChange={handleChange} required>
+                <select className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background appearance-none" name="category" value={form.category} onChange={handleCategoryChange} required>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
                 </select>
               </div>
+              <div className="space-y-1.5">
+                <label className="block text-label-sm font-semibold text-on-surface-variant pl-1">Subsection</label>
+                <select
+                  className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background appearance-none"
+                  value={subsectionPreset || ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setSubsectionPreset(v)
+                    if (v !== CUSTOM_SUBSECTION_VALUE) {
+                      setCustomSubsection('')
+                      setForm((prev) => ({ ...prev, subsection: v || null }))
+                    } else {
+                      setForm((prev) => ({ ...prev, subsection: prev.subsection || null }))
+                    }
+                  }}
+                >
+                  <option value="">—</option>
+                  {getSubsectionOptions(form.category).map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                  <option value={CUSTOM_SUBSECTION_VALUE}>Custom…</option>
+                </select>
+              </div>
+              {subsectionPreset === CUSTOM_SUBSECTION_VALUE && (
+                <div className="space-y-1.5">
+                  <label className="block text-label-sm font-semibold text-on-surface-variant pl-1">Custom Subsection</label>
+                  <input
+                    className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background"
+                    value={customSubsection}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setCustomSubsection(v)
+                      setForm((prev) => ({ ...prev, subsection: v || null }))
+                    }}
+                    placeholder="e.g. Fruits"
+                  />
+                </div>
+              )}
               <div className="space-y-1.5 md:col-span-2">
                 <label className="block text-label-sm font-semibold text-on-surface-variant pl-1">Product Name *</label>
                 <input className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background" name="name" value={form.name} onChange={handleChange} required placeholder="e.g. Amul Moti 500ml" />
@@ -232,7 +363,8 @@ export default function AdminProducts() {
   const filtered = products.filter(p =>
     p.name?.toLowerCase().includes(search.toLowerCase()) ||
     p.id?.toLowerCase().includes(search.toLowerCase()) ||
-    p.category?.toLowerCase().includes(search.toLowerCase())
+    p.category?.toLowerCase().includes(search.toLowerCase()) ||
+    p.subsection?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -290,6 +422,7 @@ export default function AdminProducts() {
                 <tr className="bg-surface-container-low text-on-surface-variant text-[12px] uppercase tracking-wider border-b border-outline-variant/30">
                   <th className="p-4 font-semibold">Product</th>
                   <th className="p-4 font-semibold">Category</th>
+                  <th className="p-4 font-semibold">Subsection</th>
                   <th className="p-4 font-semibold">Price</th>
                   <th className="p-4 font-semibold">Stock</th>
                   <th className="p-4 font-semibold">MRP</th>
@@ -313,6 +446,9 @@ export default function AdminProducts() {
                     </td>
                     <td className="p-4">
                       <span className="bg-primary-container/50 text-on-primary-container px-2.5 py-1 rounded-md text-[12px] font-semibold capitalize border border-primary/20">{product.category}</span>
+                    </td>
+                    <td className="p-4 text-on-surface-variant">
+                      {getSubsectionLabel(product.category, product.subsection) || '—'}
                     </td>
                     <td className="p-4 font-bold text-on-background">₹{product.price}</td>
                     <td className={`p-4 font-bold ${product.quantity > 0 ? 'text-green-600' : 'text-error'}`}>

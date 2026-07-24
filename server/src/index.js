@@ -116,10 +116,11 @@ app.get("/api/categories", async (req, res) => {
 
 app.get("/api/products", async (req, res) => {
   try {
-    const { section, category } = req.query;
+    const { section, category, subsection } = req.query;
     let filter = {};
 
     if (category) filter.category = category;
+    if (subsection) filter.subsection = subsection;
 
     if (section === "weekly-discounts") {
       filter.badge = { $ne: null }; // Any product with a badge
