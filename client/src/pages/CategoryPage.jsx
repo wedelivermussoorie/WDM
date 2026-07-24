@@ -39,9 +39,52 @@ const SUBSECTIONS_BY_CATEGORY = {
   ],
 }
 
+const CATEGORY_COVER = {
+  grocery: '/wdm-images/cat-groceries.jpg',
+  food: '/wdm-images/cat-groceries.jpg',
+  essentials: '/wdm-images/cat-party.jpg',
+  bakery: '/wdm-images/cat-cakes.jpg',
+  '18+': '/wdm-images/cat-party.jpg',
+}
+
+const SUBSECTION_MEDIA = {
+  grocery: {
+    'fresh-vegetables': { image: '/wdm-images/cat-groceries.jpg', icon: 'eco' },
+    'atta-dal-rice': { image: '/wdm-images/cat-groceries.jpg', icon: 'grocery' },
+    'masalas-oils': { image: '/wdm-images/cat-groceries.jpg', icon: 'soup_kitchen' },
+    'party-celebrations': { image: '/wdm-images/cat-party.jpg', icon: 'celebration' },
+  },
+  food: {
+    'drinks-beverages': { image: '/wdm-images/cat-groceries.jpg', icon: 'local_drink' },
+    'chips-namkeens': { image: '/wdm-images/cat-groceries.jpg', icon: 'local_pizza' },
+    'sweets-chocolates': { image: '/wdm-images/cat-cakes.jpg', icon: 'candy' },
+    'instant-food-noodles': { image: '/wdm-images/cat-groceries.jpg', icon: 'ramen_dining' },
+  },
+  essentials: {
+    'personal-care': { image: '/wdm-images/cat-party.jpg', icon: 'self_care' },
+    'home-cleaning': { image: '/wdm-images/cat-party.jpg', icon: 'cleaning_services' },
+    'baby-care': { image: '/wdm-images/cat-party.jpg', icon: 'child_care' },
+    'stationery': { image: '/wdm-images/cat-party.jpg', icon: 'edit_note' },
+  },
+  bakery: {
+    'dairy-bread-milk': { image: '/wdm-images/cat-groceries.jpg', icon: 'bakery_dining' },
+    'bakery-biscuits': { image: '/wdm-images/cat-cakes.jpg', icon: 'cookie' },
+  },
+  '18+': {
+    'female-wellness': { image: '/wdm-images/cat-party.jpg', icon: 'female' },
+    'pleasure-protection': { image: '/wdm-images/cat-party.jpg', icon: 'favorite' },
+  },
+}
+
 function getSubsectionOptions(category) {
   const key = typeof category === 'string' ? category : ''
   return SUBSECTIONS_BY_CATEGORY[key] || []
+}
+
+function getSubsectionMedia(category, subsection) {
+  const bucket = SUBSECTION_MEDIA[category]
+  if (bucket && subsection && bucket[subsection]) return bucket[subsection]
+  return { image: CATEGORY_COVER[category] || '/wdm-images/cat-groceries.jpg', icon: 'category' }
 }
 
 function CategoryPage({ category }) {
@@ -138,7 +181,105 @@ function CategoryPage({ category }) {
       <div id="subsection-top" />
 
       {subsectionOptions.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-headline-sm text-on-background m-0">Browse sections</h3>
+            <div className="text-on-surface-variant text-[13px] font-semibold">{products.length} products</div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <button
+              type="button"
+              onClick={() => { setActiveSubsection('all'); scrollToGroup('all') }}
+              className={`relative overflow-hidden rounded-2xl border text-left p-4 transition-all cursor-pointer min-h-[92px] ${
+                activeSubsection === 'all'
+                  ? 'border-primary shadow-md shadow-primary/15'
+                  : 'border-outline-variant/30 hover:border-outline-variant/50 hover:-translate-y-0.5'
+              }`}
+            >
+              <img
+                src={CATEGORY_COVER[category] || '/wdm-images/cat-groceries.jpg'}
+                alt=""
+                className="absolute inset-0 w-full h-full object-cover opacity-70"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-on-background/70 via-on-background/20 to-transparent"></div>
+              <div className="relative flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-white font-bold text-[15px] leading-tight">All</div>
+                  <div className="text-white/90 text-[12px] font-semibold">{products.length} items</div>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/25 flex items-center justify-center text-white">
+                  <span className="material-symbols-outlined">grid_view</span>
+                </div>
+              </div>
+            </button>
+
+            {subsectionOptions.map((s) => {
+              const count = counts.map.get(s.value) || 0
+              const media = getSubsectionMedia(category, s.value)
+              return (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => { setActiveSubsection(s.value); scrollToGroup(s.value) }}
+                  className={`relative overflow-hidden rounded-2xl border text-left p-4 transition-all cursor-pointer min-h-[92px] ${
+                    activeSubsection === s.value
+                      ? 'border-primary shadow-md shadow-primary/15'
+                      : 'border-outline-variant/30 hover:border-outline-variant/50 hover:-translate-y-0.5'
+                  }`}
+                >
+                  <img
+                    src={media.image}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover opacity-70"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-on-background/70 via-on-background/20 to-transparent"></div>
+                  <div className="relative flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-white font-bold text-[15px] leading-tight">{s.label}</div>
+                      <div className="text-white/90 text-[12px] font-semibold">{count} items</div>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/25 flex items-center justify-center text-white">
+                      <span className="material-symbols-outlined">{media.icon}</span>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+
+            {counts.otherCount > 0 && (
+              <button
+                type="button"
+                onClick={() => { setActiveSubsection('__other__'); scrollToGroup('__other__') }}
+                className={`relative overflow-hidden rounded-2xl border text-left p-4 transition-all cursor-pointer min-h-[92px] ${
+                  activeSubsection === '__other__'
+                    ? 'border-primary shadow-md shadow-primary/15'
+                    : 'border-outline-variant/30 hover:border-outline-variant/50 hover:-translate-y-0.5'
+                }`}
+              >
+                <img
+                  src={CATEGORY_COVER[category] || '/wdm-images/cat-groceries.jpg'}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover opacity-70"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-on-background/70 via-on-background/20 to-transparent"></div>
+                <div className="relative flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-white font-bold text-[15px] leading-tight">Other</div>
+                    <div className="text-white/90 text-[12px] font-semibold">{counts.otherCount} items</div>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/25 flex items-center justify-center text-white">
+                    <span className="material-symbols-outlined">inventory_2</span>
+                  </div>
+                </div>
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => { setActiveSubsection('all'); scrollToGroup('all') }}
@@ -182,7 +323,8 @@ function CategoryPage({ category }) {
               Other ({counts.otherCount})
             </button>
           )}
-        </div>
+          </div>
+        </section>
       )}
 
       {/* Filter/Sort bar (Placeholder) */}
