@@ -7,7 +7,7 @@ const CATEGORY_ICONS = {
   food: 'restaurant',
   essentials: 'inventory_2',
   bakery: 'cake',
-  '18+': 'warning'
+  '18+': '18_up_rating'
 }
 
 const SUBSECTIONS_BY_CATEGORY = {
@@ -64,6 +64,23 @@ function CategoryPage({ category }) {
   const icon = CATEGORY_ICONS[category.toLowerCase()] || 'category'
   const subsectionOptions = useMemo(() => getSubsectionOptions(category), [category])
 
+  const counts = useMemo(() => {
+    const map = new Map()
+    subsectionOptions.forEach((s) => map.set(s.value, 0))
+    let otherCount = 0
+
+    for (const p of products) {
+      const key = typeof p?.subsection === 'string' ? p.subsection : null
+      if (key && map.has(key)) {
+        map.set(key, map.get(key) + 1)
+      } else {
+        otherCount += 1
+      }
+    }
+
+    return { map, otherCount }
+  }, [products, subsectionOptions])
+
   const groups = useMemo(() => {
     const buckets = new Map()
     subsectionOptions.forEach((s) => buckets.set(s.value, []))
@@ -78,9 +95,7 @@ function CategoryPage({ category }) {
       }
     }
 
-    const ordered = subsectionOptions
-      .map((s) => ({ ...s, products: buckets.get(s.value) || [] }))
-      .filter((g) => g.products.length > 0)
+    const ordered = subsectionOptions.map((s) => ({ ...s, products: buckets.get(s.value) || [] }))
 
     return { ordered, other }
   }, [products, subsectionOptions])
@@ -137,8 +152,7 @@ function CategoryPage({ category }) {
           </button>
 
           {subsectionOptions.map((s) => {
-            const count = products.filter((p) => p?.subsection === s.value).length
-            if (count === 0) return null
+            const count = counts.map.get(s.value) || 0
             return (
               <button
                 key={s.value}
@@ -150,12 +164,12 @@ function CategoryPage({ category }) {
                     : 'bg-surface border-outline-variant/40 text-on-surface-variant hover:bg-surface-container'
                 }`}
               >
-                {s.label} ({count})
+                {s.label}{typeof count === 'number' ? ` (${count})` : ''}
               </button>
             )
           })}
 
-          {groups.other.length > 0 && (
+          {counts.otherCount > 0 && (
             <button
               type="button"
               onClick={() => { setActiveSubsection('__other__'); scrollToGroup('__other__') }}
@@ -165,7 +179,7 @@ function CategoryPage({ category }) {
                   : 'bg-surface border-outline-variant/40 text-on-surface-variant hover:bg-surface-container'
               }`}
             >
-              Other ({groups.other.length})
+              Other ({counts.otherCount})
             </button>
           )}
         </div>
@@ -181,6 +195,12 @@ function CategoryPage({ category }) {
         </select>
       </div>
 
+      {products.length > 0 && groups.ordered.every((g) => g.products.length === 0) && groups.other.length > 0 && (
+        <div className="bg-primary-container text-on-primary-container p-4 rounded-xl border border-outline-variant/20 text-[13px] font-semibold">
+          Products are not assigned to subsections yet. Go to Admin → Products and set a subsection to organize items into the sections above.
+        </div>
+      )}
+
       {/* Product Grid */}
       {products.length > 0 ? (
         activeSubsection === 'all' ? (
@@ -191,13 +211,20 @@ function CategoryPage({ category }) {
                   <h3 className="font-headline-md text-on-background m-0">{g.label}</h3>
                   <div className="text-on-surface-variant text-[13px] font-semibold">{g.products.length} items</div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {g.products.map((p) => (
-                    <div key={p.id} className="relative">
-                      <ProductCard product={p} />
-                    </div>
-                  ))}
-                </div>
+                {g.products.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {g.products.map((p) => (
+                      <div key={p.id} className="relative">
+                        <ProductCard product={p} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-on-surface-variant bg-surface-container-lowest rounded-xl border border-outline-variant/20">
+                    <span className="material-symbols-outlined text-[40px] mb-2 opacity-50">inventory_2</span>
+                    <p className="m-0 text-body-md">No products in this section yet</p>
+                  </div>
+                )}
               </section>
             ))}
 

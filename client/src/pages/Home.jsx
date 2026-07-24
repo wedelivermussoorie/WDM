@@ -17,20 +17,19 @@ const CATEGORY_ICONS = [
   { label: 'Food',      icon: 'restaurant',       path: '/food' },
   { label: 'Essentials',icon: 'inventory_2',      path: '/essentials' },
   { label: 'Bakery',    icon: 'cake',             path: '/bakery' },
-  { label: '18+',       icon: 'warning',          path: '/18-plus' },
+  { label: '18+',       icon: '18_up_rating',     path: '/18-plus' },
 ]
 
 function QuickCategories() {
   return (
     <section className="grid grid-cols-3 md:grid-cols-5 gap-4 lg:gap-10">
       {CATEGORY_ICONS.map((cat) => {
-        const isAdult = cat.label === '18+'
         return (
           <Link key={cat.label} to={cat.path} className="flex flex-col items-center gap-sm group cursor-pointer no-underline">
-            <div className={`w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform ${isAdult ? 'bg-red-100 border-2 border-red-300' : 'bg-primary-container'}`}>
-              <span className={`material-symbols-outlined text-[42px] ${isAdult ? 'text-red-600' : 'text-on-primary-container'}`}>{cat.icon}</span>
+            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform bg-primary-container">
+              <span className="material-symbols-outlined text-[42px] text-on-primary-container">{cat.icon}</span>
             </div>
-            <span className={`font-semibold text-body-md ${isAdult ? 'text-red-600' : 'text-on-background'}`}>{cat.label}</span>
+            <span className="font-semibold text-body-md text-on-background">{cat.label}</span>
           </Link>
         )
       })}
