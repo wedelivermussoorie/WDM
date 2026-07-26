@@ -152,15 +152,29 @@ router.patch("/orders/:id/status", async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    ).populate("user", "name email phone");
+    ).populate("user", "name email phone addresses");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // Send Delivery Email if status is changed to Delivered
+    // Send Delivery Email + WhatsApp if status is changed to Delivered
     if (status === "Delivered" && order.user) {
       const { sendDeliveryEmail } = require("../utils/emailTemplates");
+      const { sendWhatsAppDeliveryUpdate } = require("../utils/sendWhatsApp");
+
       sendDeliveryEmail(order.user, order).catch((err) => {
         console.error("Failed to send delivery email:", err);
       });
+
+      sendWhatsAppDeliveryUpdate(order.user, order)
+        .then((result) => {
+          if (result?.skipped) {
+            console.log("[WhatsApp] Delivery update skipped:", result.reason);
+          } else {
+            console.log("[WhatsApp] Delivery update sent successfully.");
+          }
+        })
+        .catch((err) => {
+          console.error("[WhatsApp] Failed to send delivery update:", err.message);
+        });
     }
 
     res.json(order);

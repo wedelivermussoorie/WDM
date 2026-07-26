@@ -206,11 +206,23 @@ app.post("/api/orders", protect, async (req, res) => {
     // Generate Invoice and Send Order Confirmation Email asynchronously
     const { sendOrderConfirmationEmail } = require("./utils/emailTemplates");
     const generateInvoice = require("./utils/generateInvoice");
+    const { sendWhatsAppOrderConfirmation } = require("./utils/sendWhatsApp");
     
     generateInvoice(createdOrder, req.user).then((invoiceBuffer) => {
       return sendOrderConfirmationEmail(req.user, createdOrder, invoiceBuffer);
     }).catch((err) => {
       console.error("Failed to send order confirmation email with invoice:", err);
+    });
+
+    // Send WhatsApp order confirmation (fire-and-forget)
+    sendWhatsAppOrderConfirmation(req.user, createdOrder).then((result) => {
+      if (result?.skipped) {
+        console.log("[WhatsApp] Skipped:", result.reason);
+      } else {
+        console.log("[WhatsApp] Order confirmation sent successfully.");
+      }
+    }).catch((err) => {
+      console.error("[WhatsApp] Failed to send order confirmation:", err.message);
     });
 
     res.status(201).json(createdOrder);
@@ -302,11 +314,23 @@ app.post("/api/orders/verify", protect, async (req, res) => {
     // Generate Invoice and Send Order Confirmation Email asynchronously
     const { sendOrderConfirmationEmail } = require("./utils/emailTemplates");
     const generateInvoice = require("./utils/generateInvoice");
+    const { sendWhatsAppOrderConfirmation } = require("./utils/sendWhatsApp");
     
     generateInvoice(createdOrder, req.user).then((invoiceBuffer) => {
       return sendOrderConfirmationEmail(req.user, createdOrder, invoiceBuffer);
     }).catch((err) => {
       console.error("Failed to send order confirmation email with invoice:", err);
+    });
+
+    // Send WhatsApp order confirmation (fire-and-forget)
+    sendWhatsAppOrderConfirmation(req.user, createdOrder).then((result) => {
+      if (result?.skipped) {
+        console.log("[WhatsApp] Skipped:", result.reason);
+      } else {
+        console.log("[WhatsApp] Order confirmation sent to customer.");
+      }
+    }).catch((err) => {
+      console.error("[WhatsApp] Failed to send order confirmation:", err.message);
     });
 
     res.status(201).json({ message: "Payment verified successfully", order: createdOrder });
