@@ -93,7 +93,7 @@ function CategoryModal({ category, onClose, onSave }) {
       return
     }
 
-    const url = isEdit ? `${import.meta.env.VITE_API_URL || ''}/api/admin/categories/${form.id}` : `${import.meta.env.VITE_API_URL || ''}/api/admin/categories`
+    const url = isEdit ? `${import.meta.env.VITE_API_URL || ''}/api/categories/${form.id}` : `${import.meta.env.VITE_API_URL || ''}/api/categories`
     const method = isEdit ? 'PUT' : 'POST'
 
     try {
@@ -239,7 +239,7 @@ export default function AdminCategories() {
     if (!window.confirm(`Delete the section "${title}"? This will NOT delete its products, but they will be left without a valid category.`)) return
     setDeletingId(id)
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/categories/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       })
