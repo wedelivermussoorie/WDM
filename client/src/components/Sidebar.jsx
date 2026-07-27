@@ -1,14 +1,20 @@
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
-  const menuItems = [
-    { label: 'GROCERY', path: '/grocery' },
-    { label: 'FOOD', path: '/food' },
-    { label: 'ESSENTIALS', path: '/essentials' },
-    { label: 'BAKERY', path: '/bakery' },
-    { label: '18+', path: '/18-plus' },
-  ]
+  const [categories, setCategories] = useState([])
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCategories(data)
+        }
+      })
+      .catch(err => console.error("Failed to fetch categories:", err))
+  }, [])
 
   return (
     <>
@@ -26,20 +32,24 @@ function Sidebar({ isOpen, onClose }) {
         </div>
         
         <nav className="flex-1 overflow-y-auto py-4 px-4 flex flex-col gap-2">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={onClose}
-              className={`flex items-center px-4 py-3 rounded-xl font-semibold transition-colors no-underline text-[14px] ${
-                location.pathname === item.path 
-                  ? 'bg-primary-container text-on-primary-container' 
-                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-background'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {categories.map((cat) => {
+            const path = `/category/${cat.id}`
+            return (
+              <Link
+                key={cat.id}
+                to={path}
+                onClick={onClose}
+                className={`flex items-center px-4 py-3 rounded-xl font-semibold transition-colors no-underline text-[14px] ${
+                  location.pathname === path 
+                    ? 'bg-primary-container text-on-primary-container' 
+                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-background'
+                }`}
+              >
+                {cat.icon && <span className="material-symbols-outlined mr-3 text-[20px]">{cat.icon}</span>}
+                {cat.title}
+              </Link>
+            )
+          })}
         </nav>
       </aside>
       

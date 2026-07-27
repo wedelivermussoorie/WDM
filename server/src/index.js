@@ -14,6 +14,7 @@ const { connectMongo } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 const Product = require("./models/Product");
 const Category = require("./models/Category");
 const Order = require("./models/Order");
@@ -104,15 +105,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", apiLimiter, authRoutes);
 app.use("/api/admin", apiLimiter, adminRoutes);
 app.use("/api/admin", apiLimiter, uploadRoutes);
-
-app.get("/api/categories", async (req, res) => {
-  try {
-    const categories = await Category.find();
-    res.json(categories);
-  } catch (error) {
-    res.status(500).json({ message: "Server Error" });
-  }
-});
+app.use("/api/categories", apiLimiter, categoryRoutes);
 
 app.get("/api/products", async (req, res) => {
   try {

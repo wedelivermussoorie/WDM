@@ -5,11 +5,7 @@ import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Home from './pages/Home'
-import Grocery from './pages/Grocery'
-import Food from './pages/Food'
-import Essentials from './pages/Essentials'
-import Bakery from './pages/Bakery'
-import AdultsOnly from './pages/AdultsOnly'
+import CategoryPage from './pages/CategoryPage'
 import LoginRegister from './pages/LoginRegister'
 import Cart from './pages/Cart'
 import Wishlist from './pages/Wishlist'
@@ -19,6 +15,7 @@ import AdminDashboard from './admin/AdminDashboard'
 import AdminProducts from './admin/AdminProducts'
 import AdminOrders from './admin/AdminOrders'
 import AdminUsers from './admin/AdminUsers'
+import AdminCategories from './admin/AdminCategories'
 import AdminRoute from './admin/AdminRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import AccountLayout from './pages/account/AccountLayout'
@@ -48,6 +45,7 @@ function App() {
         <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
         <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
 
         {/* Store Routes */}
         <Route path="/*" element={
@@ -58,11 +56,7 @@ function App() {
               <main className="flex-1 min-w-0">
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/grocery" element={<Grocery />} />
-                  <Route path="/food" element={<Food />} />
-                  <Route path="/essentials" element={<Essentials />} />
-                  <Route path="/bakery" element={<Bakery />} />
-                  <Route path="/18-plus" element={<AdultsOnly />} />
+                  <Route path="/category/:categoryId" element={<CategoryPage />} />
                   <Route path="/login" element={<LoginRegister />} />
                   <Route path="/verify-email" element={<VerifyEmail />} />
                   <Route path="/cart" element={<Cart />} />

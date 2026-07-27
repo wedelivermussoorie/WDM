@@ -2,34 +2,22 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 
-function formatInr(value) {
-  if (typeof value !== 'number') return ''
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
 // ── Quick Category Icons ───────────────────────────────────────────────────
-const CATEGORY_ICONS = [
-  { label: 'Groceries', icon: 'shopping_basket', path: '/grocery' },
-  { label: 'Food',      icon: 'restaurant',       path: '/food' },
-  { label: 'Essentials',icon: 'inventory_2',      path: '/essentials' },
-  { label: 'Bakery',    icon: 'cake',             path: '/bakery' },
-  { label: '18+',       icon: '18_up_rating',     path: '/18-plus' },
-]
-
-function QuickCategories() {
+function QuickCategories({ categories }) {
+  if (!categories || categories.length === 0) return null;
   return (
     <section className="grid grid-cols-3 md:grid-cols-5 gap-4 lg:gap-10">
-      {CATEGORY_ICONS.map((cat) => {
+      {categories.map((cat) => {
         return (
-          <Link key={cat.label} to={cat.path} className="flex flex-col items-center gap-sm group cursor-pointer no-underline">
-            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform bg-primary-container">
-              <span className="material-symbols-outlined text-[42px] text-on-primary-container">{cat.icon}</span>
+          <Link key={cat.id} to={`/category/${cat.id}`} className="flex flex-col items-center gap-sm group cursor-pointer no-underline">
+            <div className="w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform bg-primary-container overflow-hidden">
+               {cat.image ? (
+                 <img src={cat.image} alt={cat.title} className="w-full h-full object-cover" />
+               ) : (
+                 <span className="material-symbols-outlined text-[42px] text-on-primary-container">{cat.icon || 'category'}</span>
+               )}
             </div>
-            <span className="font-semibold text-body-md text-on-background">{cat.label}</span>
+            <span className="font-semibold text-body-md text-on-background mt-2 text-center">{cat.title}</span>
           </Link>
         )
       })}
@@ -38,10 +26,10 @@ function QuickCategories() {
 }
 
 // ── Hero Bento Grid ────────────────────────────────────────────────────────
-function HeroBento() {
+function HeroBento({ firstCategory }) {
+  const shopLink = firstCategory ? `/category/${firstCategory.id}` : '/'
   return (
     <section>
-      {/* Main hero card */}
       <div className="relative h-[300px] md:h-[450px] rounded-xl overflow-hidden shadow-md group w-full">
         <div className="absolute inset-0 bg-[#FFF9E5]"></div>
         <div className="absolute inset-0 flex items-center px-lg md:px-xl z-10">
@@ -50,7 +38,7 @@ function HeroBento() {
             <h2 className="font-display-lg text-on-background leading-tight m-0">
               Order Your <br /><span className="text-primary">Food, Snacks</span>
             </h2>
-            <Link to="/grocery" className="inline-block bg-on-background text-background px-xl py-md rounded-lg font-headline-md hover:scale-105 transition-transform no-underline">
+            <Link to={shopLink} className="inline-block bg-on-background text-background px-xl py-md rounded-lg font-headline-md hover:scale-105 transition-transform no-underline">
               Shop Now
             </Link>
           </div>
@@ -65,11 +53,9 @@ function HeroBento() {
   )
 }
 
-
-
-
 // ── Products Section ───────────────────────────────────────────────────────
 function ProductsSection({ title, actionLabel, actionPath, products }) {
+  if (!products || products.length === 0) return null;
   return (
     <section className="space-y-4">
       <div className="flex justify-between items-end border-b-2 border-outline-variant/20 pb-2">
@@ -93,72 +79,50 @@ function ProductsSection({ title, actionLabel, actionPath, products }) {
 
 // ── Home Page ──────────────────────────────────────────────────────────────
 function Home() {
-  const [groceries, setGroceries] = useState([])
-  const [food, setFood] = useState([])
-  const [essentials, setEssentials] = useState([])
-  const [bakery, setBakery] = useState([])
+  const [categories, setCategories] = useState([])
+  const [categoryProducts, setCategoryProducts] = useState({})
 
   useEffect(() => {
-    Promise.all([
-      fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=grocery`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=food`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=essentials`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=bakery`).then((r) => r.json()),
-    ])
-      .then(([groceryData, foodData, essentialsData, bakeryData]) => {
-        setGroceries(Array.isArray(groceryData) ? groceryData : [])
-        setFood(Array.isArray(foodData) ? foodData : [])
-        setEssentials(Array.isArray(essentialsData) ? essentialsData : [])
-        setBakery(Array.isArray(bakeryData) ? bakeryData : [])
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories`)
+      .then((r) => r.json())
+      .then((cats) => {
+        if (Array.isArray(cats)) {
+          setCategories(cats)
+          // Fetch products for all categories
+          Promise.all(
+            cats.map((cat) =>
+              fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=${cat.id}`).then((r) => r.json())
+            )
+          ).then((results) => {
+            const prodMap = {}
+            cats.forEach((cat, idx) => {
+              prodMap[cat.id] = Array.isArray(results[idx]) ? results[idx] : []
+            })
+            setCategoryProducts(prodMap)
+          })
+        }
       })
-      .catch(() => {
-        setGroceries([])
-        setFood([])
-        setEssentials([])
-        setBakery([])
-      })
+      .catch((err) => console.error("Failed to load home data", err))
   }, [])
 
   return (
     <main className="w-full px-4 md:px-8 py-8 space-y-12">
-      <QuickCategories />
-      <HeroBento />
+      <QuickCategories categories={categories} />
+      <HeroBento firstCategory={categories[0]} />
 
-      {groceries.length > 0 && (
-        <ProductsSection
-          title="Groceries"
-          actionLabel="View All"
-          actionPath="/grocery"
-          products={groceries.slice(0, 5)}
-        />
-      )}
-
-      {food.length > 0 && (
-        <ProductsSection
-          title="Food"
-          actionLabel="View All"
-          actionPath="/food"
-          products={food.slice(0, 5)}
-        />
-      )}
-
-      {essentials.length > 0 && (
-        <ProductsSection
-          title="Essentials"
-          actionLabel="View All"
-          actionPath="/essentials"
-          products={essentials.slice(0, 5)}
-        />
-      )}
-
-      {bakery.length > 0 && (
-        <ProductsSection
-          title="Bakery"
-          actionLabel="View All"
-          actionPath="/bakery"
-          products={bakery.slice(0, 5)}
-        />
-      )}
+      {categories.map(cat => {
+        const prods = categoryProducts[cat.id] || []
+        if (prods.length === 0) return null;
+        return (
+          <ProductsSection
+            key={cat.id}
+            title={cat.title}
+            actionLabel="View All"
+            actionPath={`/category/${cat.id}`}
+            products={prods.slice(0, 5)}
+          />
+        )
+      })}
     </main>
   )
 }

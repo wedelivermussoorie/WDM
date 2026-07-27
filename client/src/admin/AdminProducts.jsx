@@ -1,77 +1,67 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import AdminLayout from './AdminLayout'
 import { useAuth } from '../context/AuthContext'
 
-const CATEGORIES = ['grocery', 'food', 'essentials', 'bakery', '18+']
-const SUBSECTIONS_BY_CATEGORY = {
-  grocery: [
-    { value: 'fresh-vegetables', label: 'Fresh Vegetables' },
-    { value: 'atta-dal-rice', label: 'Atta, Dal & Rice' },
-    { value: 'masalas-oils', label: 'Masalas & Oils' },
-    { value: 'party-celebrations', label: 'Party & Celebrations' },
-  ],
-  food: [
-    { value: 'drinks-beverages', label: 'Drinks & Beverages' },
-    { value: 'chips-namkeens', label: 'Chips & Namkeens' },
-    { value: 'sweets-chocolates', label: 'Sweets & Chocolates' },
-    { value: 'instant-food-noodles', label: 'Instant Food & Noodles' },
-  ],
-  essentials: [
-    { value: 'personal-care', label: 'Personal Care' },
-    { value: 'home-cleaning', label: 'Home & Cleaning' },
-    { value: 'baby-care', label: 'Baby Care' },
-    { value: 'stationery', label: 'Stationery' },
-  ],
-  bakery: [
-    { value: 'dairy-bread-milk', label: 'Dairy, Bread & Milk' },
-    { value: 'bakery-biscuits', label: 'Bakery & Biscuits' },
-  ],
-  '18+': [
-    { value: 'female-wellness', label: 'Female Wellness' },
-    { value: 'pleasure-protection', label: 'Pleasure & Protection' },
-  ],
-}
-
 const CUSTOM_SUBSECTION_VALUE = '__custom__'
-const EMPTY_FORM = { id: '', name: '', category: 'grocery', subsection: null, price: '', quantity: '', mrp: '', unit: '', imageUrl: '', badge: '' }
+const EMPTY_FORM = { id: '', name: '', category: '', subsection: null, price: '', quantity: '', mrp: '', unit: '', imageUrl: '', badge: '' }
 
-function getSubsectionOptions(category) {
-  const key = typeof category === 'string' ? category : ''
-  return SUBSECTIONS_BY_CATEGORY[key] || []
+function getSubsectionLabel(categories, categoryId, subsectionValue) {
+  if (!subsectionValue) return null
+  const cat = categories.find(c => c.id === categoryId)
+  if (!cat || !cat.subsections) return subsectionValue
+  const match = cat.subsections.find(s => s.value === subsectionValue)
+  return match ? match.label : subsectionValue
 }
 
-function getSubsectionPreset(subsection, category) {
-  if (!subsection) return ''
-  const options = getSubsectionOptions(category)
-  const match = options.some((o) => o.value === subsection)
-  return match ? subsection : CUSTOM_SUBSECTION_VALUE
-}
-
-function getSubsectionLabel(category, subsection) {
-  if (!subsection) return null
-  const options = getSubsectionOptions(category)
-  const match = options.find((o) => o.value === subsection)
-  return match ? match.label : subsection
-}
-
-function ProductModal({ product, onClose, onSave }) {
-  const initialForm = product ? { ...product } : { ...EMPTY_FORM }
+function ProductModal({ product, categories, onClose, onSave }) {
+  // Select first category by default if new product
+  const defaultCategory = categories.length > 0 ? categories[0].id : ''
+  const initialForm = product ? { ...product } : { ...EMPTY_FORM, category: defaultCategory }
+  
   const [form, setForm] = useState(initialForm)
-  const [subsectionPreset, setSubsectionPreset] = useState(getSubsectionPreset(initialForm.subsection, initialForm.category))
-  const [customSubsection, setCustomSubsection] = useState(subsectionPreset === CUSTOM_SUBSECTION_VALUE ? (initialForm.subsection || '') : '')
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState(null)
   const { token } = useAuth()
   const isEdit = !!product
 
+  // Find current category's subsections
+  const currentCategoryObj = useMemo(() => categories.find(c => c.id === form.category), [categories, form.category])
+  const subsectionOptions = currentCategoryObj?.subsections || []
+
+  // Initialize preset
+  const [subsectionPreset, setSubsectionPreset] = useState(() => {
+    if (!initialForm.subsection) return ''
+    const match = subsectionOptions.some(o => o.value === initialForm.subsection)
+    return match ? initialForm.subsection : CUSTOM_SUBSECTION_VALUE
+  })
+  
+  const [customSubsection, setCustomSubsection] = useState(() => {
+    if (!initialForm.subsection) return ''
+    const match = subsectionOptions.some(o => o.value === initialForm.subsection)
+    return match ? '' : initialForm.subsection
+  })
+
   useEffect(() => {
-    const nextForm = product ? { ...product } : { ...EMPTY_FORM }
+    const nextForm = product ? { ...product } : { ...EMPTY_FORM, category: defaultCategory }
     setForm(nextForm)
-    const nextPreset = getSubsectionPreset(nextForm.subsection, nextForm.category)
-    setSubsectionPreset(nextPreset)
-    setCustomSubsection(nextPreset === CUSTOM_SUBSECTION_VALUE ? (nextForm.subsection || '') : '')
-  }, [product])
+    const nextCatObj = categories.find(c => c.id === nextForm.category)
+    const nextOptions = nextCatObj?.subsections || []
+    
+    if (!nextForm.subsection) {
+      setSubsectionPreset('')
+      setCustomSubsection('')
+    } else {
+      const match = nextOptions.some(o => o.value === nextForm.subsection)
+      if (match) {
+        setSubsectionPreset(nextForm.subsection)
+        setCustomSubsection('')
+      } else {
+        setSubsectionPreset(CUSTOM_SUBSECTION_VALUE)
+        setCustomSubsection(nextForm.subsection)
+      }
+    }
+  }, [product, categories, defaultCategory])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -80,6 +70,9 @@ function ProductModal({ product, onClose, onSave }) {
 
   const handleCategoryChange = (e) => {
     const nextCategory = e.target.value
+    const nextCatObj = categories.find(c => c.id === nextCategory)
+    const nextOptions = nextCatObj?.subsections || []
+
     const currentNormalizedSubsection = (() => {
       if (subsectionPreset === CUSTOM_SUBSECTION_VALUE) {
         const v = String(customSubsection || '').trim()
@@ -89,8 +82,18 @@ function ProductModal({ product, onClose, onSave }) {
       return v ? v : null
     })()
 
-    const nextPreset = getSubsectionPreset(currentNormalizedSubsection, nextCategory)
-    const nextCustom = nextPreset === CUSTOM_SUBSECTION_VALUE ? (currentNormalizedSubsection || '') : ''
+    let nextPreset = ''
+    let nextCustom = ''
+
+    if (currentNormalizedSubsection) {
+      const match = nextOptions.some(o => o.value === currentNormalizedSubsection)
+      if (match) {
+        nextPreset = currentNormalizedSubsection
+      } else {
+        nextPreset = CUSTOM_SUBSECTION_VALUE
+        nextCustom = currentNormalizedSubsection
+      }
+    }
 
     setSubsectionPreset(nextPreset)
     setCustomSubsection(nextCustom)
@@ -132,7 +135,6 @@ function ProductModal({ product, onClose, onSave }) {
     setSaving(true)
     setError(null)
 
-    // Require at least one image source (uploaded file OR URL)
     if (!form.imageUrl || !form.imageUrl.trim()) {
       setError('Please upload an image or provide an image URL.')
       setSaving(false)
@@ -195,8 +197,8 @@ function ProductModal({ product, onClose, onSave }) {
               </div>
               <div className="space-y-1.5">
                 <label className="block text-label-sm font-semibold text-on-surface-variant pl-1">Category *</label>
-                <select className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background appearance-none" name="category" value={form.category} onChange={handleCategoryChange} required>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                <select className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background appearance-none capitalize" name="category" value={form.category} onChange={handleCategoryChange} required>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
@@ -216,14 +218,14 @@ function ProductModal({ product, onClose, onSave }) {
                   }}
                 >
                   <option value="">—</option>
-                  {getSubsectionOptions(form.category).map((s) => (
+                  {subsectionOptions.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                   <option value={CUSTOM_SUBSECTION_VALUE}>Custom…</option>
                 </select>
               </div>
               {subsectionPreset === CUSTOM_SUBSECTION_VALUE && (
-                <div className="space-y-1.5">
+               <div className="space-y-1.5">
                   <label className="block text-label-sm font-semibold text-on-surface-variant pl-1">Custom Subsection</label>
                   <input
                     className="w-full px-4 py-2.5 bg-surface-container-low border border-outline-variant/40 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-all outline-none text-[15px] text-on-background"
@@ -265,13 +267,13 @@ function ProductModal({ product, onClose, onSave }) {
               <div className="space-y-1.5 md:col-span-2 mt-4 pt-4 border-t border-outline-variant/30">
                 <label className="block text-label-sm font-semibold text-on-surface-variant pl-1">
                   Image <span className="text-error">*</span>
-                  <span className="text-on-surface-variant font-normal ml-1">(upload a file OR paste a URL — one is required)</span>
+                  <span className="text-on-surface-variant font-normal ml-1">(upload a file OR paste a URL)</span>
                 </label>
                 <div className="flex flex-col gap-3">
                   <div>
                     <p className="text-[12px] text-on-surface-variant mb-1.5 pl-1 font-semibold uppercase tracking-wide">Option 1 — Upload to Cloudinary</p>
                     <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-[14px] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[14px] file:font-semibold file:bg-primary-container file:text-on-primary-container hover:file:bg-primary/20 transition-colors" />
-                    {uploadingImage && <div className="text-[13px] text-on-surface-variant mt-1 flex items-center gap-1"><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> Uploading to Cloudinary...</div>}
+                    {uploadingImage && <div className="text-[13px] text-on-surface-variant mt-1 flex items-center gap-1"><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> Uploading...</div>}
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1 h-px bg-outline-variant/40"></div>
@@ -309,26 +311,33 @@ function ProductModal({ product, onClose, onSave }) {
 export default function AdminProducts() {
   const { token } = useAuth()
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
-  const [modalProduct, setModalProduct] = useState(null) // null=closed, false=new, object=edit
+  const [modalProduct, setModalProduct] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/products`, { headers: { Authorization: `Bearer ${token}` } })
-      const data = await res.json()
-      setProducts(Array.isArray(data) ? data : [])
+      const [prodRes, catRes] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/products`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories`)
+      ])
+      const prodData = await prodRes.json()
+      const catData = await catRes.json()
+      
+      setProducts(Array.isArray(prodData) ? prodData : [])
+      setCategories(Array.isArray(catData) ? catData : [])
     } catch {
-      setError('Failed to load products')
+      setError('Failed to load data')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { fetchProducts() }, [token])
+  useEffect(() => { fetchData() }, [token])
 
   const handleDelete = async (productId) => {
     if (!window.confirm(`Delete this product?`)) return
@@ -431,54 +440,60 @@ export default function AdminProducts() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/20 text-[14px]">
-                {filtered.map(product => (
-                  <tr key={product.id} className="hover:bg-surface-container-low/50 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white rounded-lg p-1 border border-outline-variant/30 flex items-center justify-center shrink-0">
-                          <img className="max-w-full max-h-full object-contain rounded" src={product.imageUrl} alt={product.name} />
+                {filtered.map(product => {
+                  const catObj = categories.find(c => c.id === product.category)
+                  const catTitle = catObj ? catObj.title : product.category
+                  const subLabel = getSubsectionLabel(categories, product.category, product.subsection)
+                  
+                  return (
+                    <tr key={product.id} className="hover:bg-surface-container-low/50 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-white rounded-lg p-1 border border-outline-variant/30 flex items-center justify-center shrink-0">
+                            <img className="max-w-full max-h-full object-contain rounded" src={product.imageUrl} alt={product.name} />
+                          </div>
+                          <div>
+                            <div className="font-bold text-on-background text-[14px]">{product.name}</div>
+                            <div className="text-on-surface-variant text-[12px] font-mono">{product.id}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-bold text-on-background text-[14px]">{product.name}</div>
-                          <div className="text-on-surface-variant text-[12px] font-mono">{product.id}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className="bg-primary-container/50 text-on-primary-container px-2.5 py-1 rounded-md text-[12px] font-semibold capitalize border border-primary/20">{catTitle}</span>
+                      </td>
+                      <td className="p-4 text-on-surface-variant">
+                        {subLabel || '—'}
+                      </td>
+                      <td className="p-4 font-bold text-on-background">₹{product.price}</td>
+                      <td className={`p-4 font-bold ${product.quantity > 0 ? 'text-green-600' : 'text-error'}`}>
+                        {product.quantity > 0 ? product.quantity : 'Out of Stock'}
+                      </td>
+                      <td className="p-4 text-on-surface-variant">{product.mrp ? `₹${product.mrp}` : '—'}</td>
+                      <td className="p-4">
+                        {product.badge ? (
+                          <span className="bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded text-[11px] font-bold border border-tertiary/20">{product.badge}</span>
+                        ) : <span className="text-on-surface-variant opacity-50">—</span>}
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            className="px-3 py-1.5 rounded-lg font-semibold text-[13px] bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors border-none cursor-pointer flex items-center gap-1" 
+                            onClick={() => setModalProduct(product)}
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span> Edit
+                          </button>
+                          <button
+                            className="px-3 py-1.5 rounded-lg font-semibold text-[13px] bg-error-container text-error hover:bg-error-container/80 transition-colors border-none cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                            onClick={() => handleDelete(product._id)}
+                            disabled={deletingId === product._id}
+                          >
+                            {deletingId === product._id ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> : <span className="material-symbols-outlined text-[16px]">delete</span>}
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <span className="bg-primary-container/50 text-on-primary-container px-2.5 py-1 rounded-md text-[12px] font-semibold capitalize border border-primary/20">{product.category}</span>
-                    </td>
-                    <td className="p-4 text-on-surface-variant">
-                      {getSubsectionLabel(product.category, product.subsection) || '—'}
-                    </td>
-                    <td className="p-4 font-bold text-on-background">₹{product.price}</td>
-                    <td className={`p-4 font-bold ${product.quantity > 0 ? 'text-green-600' : 'text-error'}`}>
-                      {product.quantity > 0 ? product.quantity : 'Out of Stock'}
-                    </td>
-                    <td className="p-4 text-on-surface-variant">{product.mrp ? `₹${product.mrp}` : '—'}</td>
-                    <td className="p-4">
-                      {product.badge ? (
-                        <span className="bg-tertiary-container text-on-tertiary-container px-2 py-0.5 rounded text-[11px] font-bold border border-tertiary/20">{product.badge}</span>
-                      ) : <span className="text-on-surface-variant opacity-50">—</span>}
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          className="px-3 py-1.5 rounded-lg font-semibold text-[13px] bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors border-none cursor-pointer flex items-center gap-1" 
-                          onClick={() => setModalProduct(product)}
-                        >
-                          <span className="material-symbols-outlined text-[16px]">edit</span> Edit
-                        </button>
-                        <button
-                          className="px-3 py-1.5 rounded-lg font-semibold text-[13px] bg-error-container text-error hover:bg-error-container/80 transition-colors border-none cursor-pointer flex items-center gap-1 disabled:opacity-50"
-                          onClick={() => handleDelete(product._id)}
-                          disabled={deletingId === product._id}
-                        >
-                          {deletingId === product._id ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> : <span className="material-symbols-outlined text-[16px]">delete</span>}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
@@ -488,6 +503,7 @@ export default function AdminProducts() {
       {modalProduct !== null && (
         <ProductModal
           product={modalProduct === false ? null : modalProduct}
+          categories={categories}
           onClose={() => setModalProduct(null)}
           onSave={handleSave}
         />

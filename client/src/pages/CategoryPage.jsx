@@ -1,99 +1,29 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 
-// Mapping categories to material icons
-const CATEGORY_ICONS = {
-  grocery: 'shopping_basket',
-  food: 'restaurant',
-  essentials: 'inventory_2',
-  bakery: 'cake',
-  '18+': '18_up_rating'
-}
-
-const SUBSECTIONS_BY_CATEGORY = {
-  grocery: [
-    { value: 'fresh-vegetables', label: 'Fresh Vegetables' },
-    { value: 'atta-dal-rice', label: 'Atta, Dal & Rice' },
-    { value: 'masalas-oils', label: 'Masalas & Oils' },
-    { value: 'party-celebrations', label: 'Party & Celebrations' },
-  ],
-  food: [
-    { value: 'drinks-beverages', label: 'Drinks & Beverages' },
-    { value: 'chips-namkeens', label: 'Chips & Namkeens' },
-    { value: 'sweets-chocolates', label: 'Sweets & Chocolates' },
-    { value: 'instant-food-noodles', label: 'Instant Food & Noodles' },
-  ],
-  essentials: [
-    { value: 'personal-care', label: 'Personal Care' },
-    { value: 'home-cleaning', label: 'Home & Cleaning' },
-    { value: 'baby-care', label: 'Baby Care' },
-    { value: 'stationery', label: 'Stationery' },
-  ],
-  bakery: [
-    { value: 'dairy-bread-milk', label: 'Dairy, Bread & Milk' },
-    { value: 'bakery-biscuits', label: 'Bakery & Biscuits' },
-  ],
-  '18+': [
-    { value: 'female-wellness', label: 'Female Wellness' },
-    { value: 'pleasure-protection', label: 'Pleasure & Protection' },
-  ],
-}
-
-const CATEGORY_COVER = {
-  grocery: '/wdm-images/cat-groceries.jpg',
-  food: '/wdm-images/cat-groceries.jpg',
-  essentials: '/wdm-images/cat-party.jpg',
-  bakery: '/wdm-images/cat-cakes.jpg',
-  '18+': '/wdm-images/cat-party.jpg',
-}
-
-const SUBSECTION_MEDIA = {
-  grocery: {
-    'fresh-vegetables': { image: '/wdm-images/cat-groceries.jpg', icon: 'eco' },
-    'atta-dal-rice': { image: '/wdm-images/cat-groceries.jpg', icon: 'grocery' },
-    'masalas-oils': { image: '/wdm-images/cat-groceries.jpg', icon: 'soup_kitchen' },
-    'party-celebrations': { image: '/wdm-images/cat-party.jpg', icon: 'celebration' },
-  },
-  food: {
-    'drinks-beverages': { image: '/wdm-images/cat-groceries.jpg', icon: 'local_drink' },
-    'chips-namkeens': { image: '/wdm-images/cat-groceries.jpg', icon: 'local_pizza' },
-    'sweets-chocolates': { image: '/wdm-images/cat-cakes.jpg', icon: 'candy' },
-    'instant-food-noodles': { image: '/wdm-images/cat-groceries.jpg', icon: 'ramen_dining' },
-  },
-  essentials: {
-    'personal-care': { image: '/wdm-images/cat-party.jpg', icon: 'self_care' },
-    'home-cleaning': { image: '/wdm-images/cat-party.jpg', icon: 'cleaning_services' },
-    'baby-care': { image: '/wdm-images/cat-party.jpg', icon: 'child_care' },
-    'stationery': { image: '/wdm-images/cat-party.jpg', icon: 'edit_note' },
-  },
-  bakery: {
-    'dairy-bread-milk': { image: '/wdm-images/cat-groceries.jpg', icon: 'bakery_dining' },
-    'bakery-biscuits': { image: '/wdm-images/cat-cakes.jpg', icon: 'cookie' },
-  },
-  '18+': {
-    'female-wellness': { image: '/wdm-images/cat-party.jpg', icon: 'female' },
-    'pleasure-protection': { image: '/wdm-images/cat-party.jpg', icon: 'favorite' },
-  },
-}
-
-function getSubsectionOptions(category) {
-  const key = typeof category === 'string' ? category : ''
-  return SUBSECTIONS_BY_CATEGORY[key] || []
-}
-
-function getSubsectionMedia(category, subsection) {
-  const bucket = SUBSECTION_MEDIA[category]
-  if (bucket && subsection && bucket[subsection]) return bucket[subsection]
-  return { image: CATEGORY_COVER[category] || '/wdm-images/cat-groceries.jpg', icon: 'category' }
-}
-
-function CategoryPage({ category }) {
+function CategoryPage() {
+  const { categoryId } = useParams()
+  const [category, setCategory] = useState(null)
   const [products, setProducts] = useState([])
   const [activeSubsection, setActiveSubsection] = useState('all')
 
   useEffect(() => {
     setActiveSubsection('all')
-    fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=${encodeURIComponent(category)}`)
+    
+    // Fetch categories to find the current one
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const match = data.find(c => c.id === categoryId)
+          setCategory(match || null)
+        }
+      })
+      .catch(err => console.error(err))
+
+    // Fetch products for this category
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/products?category=${encodeURIComponent(categoryId)}`)
       .then((r) => r.json())
       .then((data) => {
         setProducts(Array.isArray(data) ? data : [])
@@ -101,11 +31,12 @@ function CategoryPage({ category }) {
       .catch(() => {
         setProducts([])
       })
-  }, [category])
+  }, [categoryId])
 
-  const title = category.charAt(0).toUpperCase() + category.slice(1)
-  const icon = CATEGORY_ICONS[category.toLowerCase()] || 'category'
-  const subsectionOptions = useMemo(() => getSubsectionOptions(category), [category])
+  const title = category?.title || categoryId
+  const icon = category?.icon || 'category'
+  const image = category?.image || '/wdm-images/cat-groceries.jpg'
+  const subsectionOptions = category?.subsections || []
 
   const counts = useMemo(() => {
     const map = new Map()
@@ -169,11 +100,15 @@ function CategoryPage({ category }) {
     <main className="w-full px-4 md:px-8 py-8 space-y-8">
       {/* Category Header */}
       <div className="flex items-center gap-4 border-b-2 border-outline-variant/20 pb-4">
-        <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center shadow-md">
-          <span className="material-symbols-outlined text-on-primary-container text-[32px]">{icon}</span>
+        <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center shadow-md overflow-hidden relative">
+          {category?.image ? (
+            <img src={category.image} alt={title} className="w-full h-full object-cover" />
+          ) : (
+            <span className="material-symbols-outlined text-on-primary-container text-[32px] z-10">{icon}</span>
+          )}
         </div>
         <div>
-          <h2 className="font-headline-lg text-on-background m-0 leading-tight">{title}</h2>
+          <h2 className="font-headline-lg text-on-background m-0 leading-tight capitalize">{title}</h2>
           <p className="text-on-surface-variant text-label-md m-0">{products.length} Products</p>
         </div>
       </div>
@@ -198,7 +133,7 @@ function CategoryPage({ category }) {
               }`}
             >
               <img
-                src={CATEGORY_COVER[category] || '/wdm-images/cat-groceries.jpg'}
+                src={image}
                 alt=""
                 className="absolute inset-0 w-full h-full object-cover opacity-70"
                 loading="lazy"
@@ -217,7 +152,6 @@ function CategoryPage({ category }) {
 
             {subsectionOptions.map((s) => {
               const count = counts.map.get(s.value) || 0
-              const media = getSubsectionMedia(category, s.value)
               return (
                 <button
                   key={s.value}
@@ -230,7 +164,7 @@ function CategoryPage({ category }) {
                   }`}
                 >
                   <img
-                    src={media.image}
+                    src={s.image || image}
                     alt=""
                     className="absolute inset-0 w-full h-full object-cover opacity-70"
                     loading="lazy"
@@ -242,7 +176,7 @@ function CategoryPage({ category }) {
                       <div className="text-white/90 text-[12px] font-semibold">{count} items</div>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/25 flex items-center justify-center text-white">
-                      <span className="material-symbols-outlined">{media.icon}</span>
+                      <span className="material-symbols-outlined">{s.icon || 'category'}</span>
                     </div>
                   </div>
                 </button>
@@ -260,7 +194,7 @@ function CategoryPage({ category }) {
                 }`}
               >
                 <img
-                  src={CATEGORY_COVER[category] || '/wdm-images/cat-groceries.jpg'}
+                  src={image}
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover opacity-70"
                   loading="lazy"

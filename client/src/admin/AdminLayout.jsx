@@ -24,6 +24,11 @@ const navItems = [
     label: 'Users',
     icon: 'group'
   },
+  {
+    path: '/admin/categories',
+    label: 'Sections',
+    icon: 'category'
+  }
 ]
 
 export default function AdminLayout({ children, title }) {
