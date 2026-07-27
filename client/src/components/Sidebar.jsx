@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation()
   const [categories, setCategories] = useState([])
+  const [expandedCat, setExpandedCat] = useState(null)
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories`)
@@ -15,6 +16,16 @@ function Sidebar({ isOpen, onClose }) {
       })
       .catch(err => console.error("Failed to fetch categories:", err))
   }, [])
+
+  // Auto-expand the category that matches the current URL
+  useEffect(() => {
+    const match = categories.find(c => location.pathname === `/category/${c.id}` || location.pathname.startsWith(`/category/${c.id}`))
+    if (match) setExpandedCat(match.id)
+  }, [location.pathname, categories])
+
+  const toggleCat = (catId) => {
+    setExpandedCat(prev => prev === catId ? null : catId)
+  }
 
   return (
     <>
@@ -31,23 +42,78 @@ function Sidebar({ isOpen, onClose }) {
           </button>
         </div>
         
-        <nav className="flex-1 overflow-y-auto py-4 px-4 flex flex-col gap-2">
+        <nav className="flex-1 overflow-y-auto py-4 px-4 flex flex-col gap-1">
           {categories.map((cat) => {
-            const path = `/category/${cat.id}`
+            const catPath = `/category/${cat.id}`
+            const isCatActive = location.pathname === catPath
+            const isExpanded = expandedCat === cat.id
+            const hasSubsections = cat.subsections && cat.subsections.length > 0
+
             return (
-              <Link
-                key={cat.id}
-                to={path}
-                onClick={onClose}
-                className={`flex items-center px-4 py-3 rounded-xl font-semibold transition-colors no-underline text-[14px] ${
-                  location.pathname === path 
-                    ? 'bg-primary-container text-on-primary-container' 
-                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-background'
-                }`}
-              >
-                {cat.icon && <span className="material-symbols-outlined mr-3 text-[20px]">{cat.icon}</span>}
-                {cat.title}
-              </Link>
+              <div key={cat.id}>
+                {/* Section row */}
+                <div className={`flex items-center rounded-xl transition-colors ${isCatActive ? 'bg-primary-container' : 'hover:bg-surface-container'}`}>
+                  <Link
+                    to={catPath}
+                    onClick={onClose}
+                    className={`flex-1 flex items-center px-4 py-3 font-semibold no-underline text-[14px] rounded-xl transition-colors ${
+                      isCatActive
+                        ? 'text-on-primary-container'
+                        : 'text-on-surface-variant hover:text-on-background'
+                    }`}
+                  >
+                    {cat.icon && (
+                      <span className="material-symbols-outlined mr-3 text-[20px]">{cat.icon}</span>
+                    )}
+                    {cat.title}
+                  </Link>
+
+                  {/* Expand/collapse toggle — only show if subsections exist */}
+                  {hasSubsections && (
+                    <button
+                      type="button"
+                      onClick={() => toggleCat(cat.id)}
+                      className="pr-3 py-3 bg-transparent border-none cursor-pointer text-on-surface-variant hover:text-on-background transition-colors"
+                      aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                    >
+                      <span
+                        className="material-symbols-outlined text-[18px] transition-transform duration-200"
+                        style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', display: 'block' }}
+                      >
+                        expand_more
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Subsection list */}
+                {hasSubsections && isExpanded && (
+                  <div className="ml-4 mt-0.5 mb-1 border-l-2 border-outline-variant/30 pl-3 flex flex-col gap-0.5">
+                    {cat.subsections.map((sub) => {
+                      const subPath = `/category/${cat.id}?sub=${sub.value}`
+                      // Match by just comparing the subsection value in the query param
+                      const isSubActive = location.pathname === catPath && location.search === `?sub=${sub.value}`
+                      return (
+                        <Link
+                          key={sub.value}
+                          to={subPath}
+                          onClick={onClose}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium no-underline transition-colors ${
+                            isSubActive
+                              ? 'bg-primary-container/60 text-on-primary-container font-semibold'
+                              : 'text-on-surface-variant hover:bg-surface-container hover:text-on-background'
+                          }`}
+                        >
+                          {sub.icon && (
+                            <span className="material-symbols-outlined text-[16px] opacity-70">{sub.icon}</span>
+                          )}
+                          {sub.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )
           })}
         </nav>

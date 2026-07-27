@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 
 function CategoryPage() {
   const { categoryId } = useParams()
+  const [searchParams] = useSearchParams()
   const [category, setCategory] = useState(null)
   const [products, setProducts] = useState([])
-  const [activeSubsection, setActiveSubsection] = useState('all')
+  const [activeSubsection, setActiveSubsection] = useState(() => searchParams.get('sub') || 'all')
 
+  // Sync activeSubsection when ?sub= param changes (e.g. sidebar link click)
   useEffect(() => {
-    setActiveSubsection('all')
+    const sub = searchParams.get('sub')
+    setActiveSubsection(sub || 'all')
+  }, [searchParams])
     
     // Fetch categories to find the current one
     fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories`)
