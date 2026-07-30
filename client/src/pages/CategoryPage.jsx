@@ -14,7 +14,9 @@ function CategoryPage() {
     const sub = searchParams.get('sub')
     setActiveSubsection(sub || 'all')
   }, [searchParams])
-    
+
+  // Fetch category info and products when categoryId changes
+  useEffect(() => {
     // Fetch categories to find the current one
     fetch(`${import.meta.env.VITE_API_URL || ''}/api/categories`)
       .then(res => res.json())

@@ -1,22 +1,32 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
+  const { user } = useAuth();
+
+  const cartKey = user ? `cartItems_${user.id || user._id}` : 'cartItems_guest';
 
   useEffect(() => {
-    // Load cart from local storage on mount
-    const storedCart = localStorage.getItem('cartItems');
+    // Load cart from local storage on mount and when user changes
+    const storedCart = localStorage.getItem(cartKey);
     if (storedCart) {
       setCartItems(JSON.parse(storedCart));
+    } else {
+      setCartItems([]);
     }
-  }, []);
+  }, [cartKey]);
 
   useEffect(() => {
     // Save cart to local storage whenever it changes
-    localStorage.setItem('cartItems', JSON.stringify(cartItems));
-  }, [cartItems]);
+    if (cartItems.length > 0) {
+      localStorage.setItem(cartKey, JSON.stringify(cartItems));
+    } else {
+      localStorage.removeItem(cartKey);
+    }
+  }, [cartItems, cartKey]);
 
   const addToCart = (product, quantity = 1) => {
     setCartItems(prev => {

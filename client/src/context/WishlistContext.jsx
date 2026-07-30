@@ -1,20 +1,30 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { useAuth } from './AuthContext';
 
 const WishlistContext = createContext();
 
 export function WishlistProvider({ children }) {
   const [wishlistItems, setWishlistItems] = useState([]);
+  const { user } = useAuth();
+
+  const wishlistKey = user ? `wishlistItems_${user.id || user._id}` : 'wishlistItems_guest';
 
   useEffect(() => {
-    const stored = localStorage.getItem('wishlistItems');
+    const stored = localStorage.getItem(wishlistKey);
     if (stored) {
       setWishlistItems(JSON.parse(stored));
+    } else {
+      setWishlistItems([]);
     }
-  }, []);
+  }, [wishlistKey]);
 
   useEffect(() => {
-    localStorage.setItem('wishlistItems', JSON.stringify(wishlistItems));
-  }, [wishlistItems]);
+    if (wishlistItems.length > 0) {
+      localStorage.setItem(wishlistKey, JSON.stringify(wishlistItems));
+    } else {
+      localStorage.removeItem(wishlistKey);
+    }
+  }, [wishlistItems, wishlistKey]);
 
   const addToWishlist = (product) => {
     setWishlistItems(prev => {
