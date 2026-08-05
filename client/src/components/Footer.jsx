@@ -35,7 +35,7 @@ export default function Footer() {
                 <span className="material-symbols-outlined text-[18px]">call</span> +91 7420097008
               </li>
               <li className="flex items-center gap-xs">
-                <span className="material-symbols-outlined text-[18px]">mail</span> support@wedeliverm.com
+                <span className="material-symbols-outlined text-[18px]">mail</span> info@wedelivermussoorie.com
               </li>
             </ul>
           </div>
