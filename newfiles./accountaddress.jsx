@@ -8,6 +8,7 @@ function emptyAddress() {
     line1: '',
     line2: '',
     landmark: '',
+    // NEW: Permanently fixed local delivery details
     city: 'Mussoorie',
     state: 'Uttarakhand',
     pincode: '248179',
@@ -63,6 +64,8 @@ export default function AccountAddresses() {
   useEffect(() => {
     const b = user?.addresses?.billing
     const s = user?.addresses?.shipping
+    
+    // Ensure existing users who didn't have these set still get the fixed Mussoorie values
     if (b) setBilling({ ...emptyAddress(), ...b, city: 'Mussoorie', state: 'Uttarakhand', pincode: '248179', country: 'India' })
     if (s) setShipping({ ...emptyAddress(), ...s, city: 'Mussoorie', state: 'Uttarakhand', pincode: '248179', country: 'India' })
   }, [user?.addresses?.billing, user?.addresses?.shipping])
@@ -91,7 +94,6 @@ export default function AccountAddresses() {
 
   const handleGetLocation = () => {
     setError('')
-    if (!active) return
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser')
       return
@@ -107,7 +109,7 @@ export default function AccountAddresses() {
         }))
         setIsLocating(false)
       },
-      () => {
+      (err) => {
         setIsLocating(false)
         setError('Unable to retrieve your location. Please check your browser permissions.')
       }
@@ -160,6 +162,7 @@ export default function AccountAddresses() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Billing Address Card */}
         <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-2">
           <div className="flex items-center justify-between gap-4">
             <div className="font-semibold text-on-surface">Billing address</div>
@@ -175,7 +178,7 @@ export default function AccountAddresses() {
             <div className="text-[13px] text-on-surface-variant">
               {formatAddress(billingSaved)}
               {billingSaved.latitude && (
-                <div className="mt-2 text-green-600 font-medium">Location pin saved</div>
+                <div className="mt-2 text-green-600 font-medium">📍 Location Pin Saved</div>
               )}
             </div>
           ) : (
@@ -183,6 +186,7 @@ export default function AccountAddresses() {
           )}
         </div>
 
+        {/* Shipping Address Card */}
         <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl p-5 space-y-2">
           <div className="flex items-center justify-between gap-4">
             <div className="font-semibold text-on-surface">Shipping address</div>
@@ -198,7 +202,7 @@ export default function AccountAddresses() {
             <div className="text-[13px] text-on-surface-variant">
               {formatAddress(shippingSaved)}
               {shippingSaved.latitude && (
-                <div className="mt-2 text-green-600 font-medium">Location pin saved</div>
+                <div className="mt-2 text-green-600 font-medium">📍 Location Pin Saved</div>
               )}
             </div>
           ) : (
@@ -232,9 +236,9 @@ export default function AccountAddresses() {
               type="button"
               onClick={handleGetLocation}
               disabled={isLocating}
-              className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-[13px] font-bold border border-blue-200 cursor-pointer hover:bg-blue-200 transition-colors flex items-center gap-2 whitespace-nowrap disabled:opacity-70"
+              className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-[13px] font-bold border border-blue-200 cursor-pointer hover:bg-blue-200 transition-colors flex items-center gap-2 whitespace-nowrap"
             >
-              {isLocating ? 'Locating...' : 'Auto-detect pin'}
+              {isLocating ? 'Locating...' : '📍 Auto-Detect Pin'}
             </button>
           </div>
 
@@ -248,11 +252,13 @@ export default function AccountAddresses() {
               <Field label="Address line 2" name="line2" value={active.value.line2} onChange={onChange} />
             </div>
             <Field label="Landmark" name="landmark" value={active.value.landmark} onChange={onChange} />
+            
+            {/* NEW: Locked location fields */}
             <Field label="City" name="city" value={active.value.city} onChange={onChange} required readOnly />
             <Field label="State" name="state" value={active.value.state} onChange={onChange} required readOnly />
             <Field label="Pincode" name="pincode" value={active.value.pincode} onChange={onChange} required readOnly />
             <Field label="Country" name="country" value={active.value.country} onChange={onChange} readOnly />
-
+            
             {active.value.latitude && (
               <>
                 <Field label="Latitude" name="latitude" value={active.value.latitude} readOnly />

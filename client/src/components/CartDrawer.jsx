@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
+import { useCart } from '../context/CartContext'
 
 function formatInr(value) {
   if (typeof value !== 'number') return ''
@@ -9,7 +10,18 @@ function formatInr(value) {
   }).format(value)
 }
 
-export default function CartDrawer({ open, onClose, onViewCart, items }) {
+export default function CartDrawer({ open, onClose, onViewCart }) {
+  const {
+    cartItems: items,
+    cartItemCount: count,
+    subtotal,
+    gstAmount,
+    deliveryCharge,
+    finalTotal,
+    isMinimumMet,
+    MINIMUM_ORDER_VALUE,
+  } = useCart()
+
   useEffect(() => {
     if (!open) return
 
@@ -21,21 +33,13 @@ export default function CartDrawer({ open, onClose, onViewCart, items }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
 
-  const { total, count } = useMemo(() => {
-    const t = (items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0)
-    const c = (items || []).reduce((sum, item) => sum + item.quantity, 0)
-    return { total: t, count: c }
-  }, [items])
-
   return (
     <>
-      {/* Overlay */}
       <div 
         className={`fixed inset-0 bg-on-background/20 backdrop-blur-sm z-[999] transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose} 
       />
       
-      {/* Drawer */}
       <aside 
         className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-surface-container-lowest shadow-2xl z-[1000] flex flex-col transform transition-transform duration-300 ease-in-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog" 
@@ -85,14 +89,39 @@ export default function CartDrawer({ open, onClose, onViewCart, items }) {
         </div>
 
         {items?.length > 0 && (
-          <div className="p-6 border-t border-outline-variant/30 bg-surface">
-            <div className="flex justify-between items-center mb-4 text-[15px]">
-              <span className="text-on-surface-variant font-medium">Subtotal ({count} items)</span>
-              <span className="font-bold text-[20px] text-on-background">{formatInr(total)}</span>
+          <div className="p-6 border-t border-outline-variant/30 bg-surface flex flex-col gap-2">
+            <div className="flex justify-between items-center text-[14px] text-on-surface-variant">
+              <span>Subtotal ({count} items)</span>
+              <span>{formatInr(subtotal)}</span>
             </div>
+            <div className="flex justify-between items-center text-[14px] text-on-surface-variant">
+              <span>GST (18%)</span>
+              <span>{formatInr(gstAmount)}</span>
+            </div>
+            <div className="flex justify-between items-center text-[14px] text-on-surface-variant">
+              <span>Delivery Charge</span>
+              <span>{deliveryCharge > 0 ? formatInr(deliveryCharge) : 'Free'}</span>
+            </div>
+
+            <div className="flex justify-between items-center mt-2 mb-4 text-[16px]">
+              <span className="font-bold text-on-background">Total</span>
+              <span className="font-bold text-[20px] text-primary">{formatInr(finalTotal)}</span>
+            </div>
+
+            {!isMinimumMet && (
+              <div className="text-red-500 text-sm mb-2 text-center font-medium">
+                Add {formatInr(MINIMUM_ORDER_VALUE - subtotal)} more to reach the minimum order value.
+              </div>
+            )}
+
             <button 
               type="button" 
-              className="w-full py-4 bg-primary text-on-primary rounded-xl font-bold text-[16px] border-none cursor-pointer hover:brightness-95 transition-all shadow-md flex items-center justify-center gap-2" 
+              disabled={!isMinimumMet}
+              className={`w-full py-4 rounded-xl font-bold text-[16px] border-none flex items-center justify-center gap-2 transition-all shadow-md ${
+                isMinimumMet 
+                  ? 'bg-primary text-on-primary cursor-pointer hover:brightness-95' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
               onClick={onViewCart}
             >
               <span>View Full Cart</span>

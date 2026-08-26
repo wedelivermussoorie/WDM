@@ -23,7 +23,7 @@ function formatInr(value) {
 }
 
 function Cart() {
-  const { cartItems, updateQuantity, removeFromCart, cartTotal, clearCart } = useCart()
+  const { cartItems, updateQuantity, removeFromCart, clearCart, subtotal, gstAmount, deliveryCharge, finalTotal, isMinimumMet, MINIMUM_ORDER_VALUE } = useCart()
   const { token, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
   
@@ -33,6 +33,11 @@ function Cart() {
   const handleCheckout = async () => {
     if (!isAuthenticated) {
       navigate('/login')
+      return
+    }
+
+    if (!isMinimumMet) {
+      setError(`Minimum order value is ${formatInr(MINIMUM_ORDER_VALUE)}. Please add ${formatInr(MINIMUM_ORDER_VALUE - subtotal)} more to proceed.`)
       return
     }
 
@@ -91,7 +96,7 @@ function Cart() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ amount: cartTotal })
+        body: JSON.stringify({ amount: finalTotal })
       })
 
       const orderData = await orderResponse.json()
@@ -125,7 +130,7 @@ function Cart() {
                   quantity: item.quantity,
                   image: item.imageUrl
                 })),
-                totalAmount: cartTotal,
+                totalAmount: finalTotal,
                 shippingAddress
               })
             })
@@ -154,7 +159,8 @@ function Cart() {
   }
 
   const totalMrp = cartItems.reduce((sum, item) => sum + ((item.mrp || item.price) * item.quantity), 0)
-  const savings = totalMrp - cartTotal
+  const savings = totalMrp - subtotal
+  const remainingToMinimum = Math.max(0, MINIMUM_ORDER_VALUE - subtotal)
 
   return (
     <main className="w-full px-4 md:px-8 py-8 max-w-6xl mx-auto space-y-8">
@@ -242,14 +248,27 @@ function Cart() {
                   <span>-{formatInr(savings)}</span>
                 </div>
               )}
+              <div className="flex justify-between items-center text-on-surface-variant">
+                <span>Items Total</span>
+                <span className="text-on-background font-semibold">{formatInr(subtotal)}</span>
+              </div>
+              <div className="flex justify-between items-center text-on-surface-variant">
+                <span>GST (18%)</span>
+                <span className="text-on-background font-semibold">{formatInr(gstAmount)}</span>
+              </div>
               <div className="flex justify-between items-center text-on-surface-variant pb-4 border-b border-outline-variant/20">
                 <span>Delivery Fee</span>
-                <span className="text-on-background font-semibold">Free</span>
+                <span className="text-on-background font-semibold">{deliveryCharge > 0 ? formatInr(deliveryCharge) : 'Free'}</span>
               </div>
               <div className="flex justify-between items-center font-bold text-[20px] text-on-background pt-2">
                 <span>Total Amount</span>
-                <span>{formatInr(cartTotal)}</span>
+                <span>{formatInr(finalTotal)}</span>
               </div>
+              {!isMinimumMet && (
+                <div className="text-center text-error bg-error-container text-on-error-container py-2 rounded-lg text-label-sm font-bold mt-4">
+                  Add {formatInr(remainingToMinimum)} more to reach the minimum order value
+                </div>
+              )}
               {savings > 0 && (
                 <div className="text-center text-primary bg-primary-container py-2 rounded-lg text-label-sm font-bold mt-4">
                   You will save {formatInr(savings)} on this order
@@ -259,10 +278,10 @@ function Cart() {
             
             <button 
               className={`w-full py-4 rounded-xl font-bold text-[16px] border-none transition-all flex justify-center items-center gap-2 ${
-                loading ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary text-on-primary hover:brightness-95 cursor-pointer shadow-md'
+                loading || !isMinimumMet ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary text-on-primary hover:brightness-95 cursor-pointer shadow-md'
               }`} 
               onClick={handleCheckout} 
-              disabled={loading}
+              disabled={loading || !isMinimumMet}
             >
               {loading ? (
                 <>

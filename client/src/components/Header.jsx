@@ -7,7 +7,7 @@ import CartDrawer from './CartDrawer'
 
 export default function Header({ toggleSidebar }) {
   const { isAuthenticated, logout, user } = useAuth()
-  const { cartItemCount, cartItems } = useCart()
+  const { cartItemCount } = useCart()
   const { wishlistCount } = useWishlist()
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -166,7 +166,7 @@ export default function Header({ toggleSidebar }) {
         </div>
       </header>
 
-      <CartDrawer open={isCartOpen} onClose={closeCart} onViewCart={viewFullCart} items={cartItems} />
+      <CartDrawer open={isCartOpen} onClose={closeCart} onViewCart={viewFullCart} />
     </>
   )
 }
