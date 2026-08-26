@@ -1,81 +1,53 @@
-import { createContext, useState, useEffect, useContext } from 'react';
-import { useAuth } from './AuthContext';
+import React, { createContext, useState } from 'react';
 
-const CartContext = createContext();
+export const CartContext = createContext();
 
-export function CartProvider({ children }) {
+export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
-  const { user } = useAuth();
+  const [pincode, setPincode] = useState('');
 
-  const cartKey = user ? `cartItems_${user.id || user._id}` : 'cartItems_guest';
+  // The 3 delivery charge tiers (Minimum to Maximum)
+  const DELIVERY_FEES = {
+    MIN: 30,
+    MID: 50,
+    MAX: 80
+  };
+  
+  // Mapping the 3 numbers to specific Mussoorie pincodes
+  // You can add as many pincodes as you need and assign them one of the 3 tiers
+  const deliveryZones = {
+    "248179": DELIVERY_FEES.MIN, // Closest zone, cheapest delivery
+    "248122": DELIVERY_FEES.MID, // Medium distance
+    "248178": DELIVERY_FEES.MAX, // Farthest zone, maximum delivery
+  };
 
-  useEffect(() => {
-    // Load cart from local storage on mount and when user changes
-    const storedCart = localStorage.getItem(cartKey);
-    if (storedCart) {
-      setCartItems(JSON.parse(storedCart));
+  // Core Calculations
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const gstAmount = subtotal * 0.18; 
+  
+  // Pincode Validation & Delivery Logic
+  let deliveryCharge = 0;
+  let deliveryError = '';
+
+  if (pincode) {
+    if (deliveryZones[pincode] !== undefined) {
+      deliveryCharge = deliveryZones[pincode];
     } else {
-      setCartItems([]);
+      deliveryError = 'Sorry, we do not deliver to this pincode yet.';
     }
-  }, [cartKey]);
+  }
 
-  useEffect(() => {
-    // Save cart to local storage whenever it changes
-    if (cartItems.length > 0) {
-      localStorage.setItem(cartKey, JSON.stringify(cartItems));
-    } else {
-      localStorage.removeItem(cartKey);
-    }
-  }, [cartItems, cartKey]);
-
-  const addToCart = (product, quantity = 1) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.id === product.id);
-      if (existingItem) {
-        return prev.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
-        );
-      }
-      return [...prev, { ...product, quantity }];
-    });
-  };
-
-  const removeFromCart = (productId) => {
-    setCartItems(prev => prev.filter(item => item.id !== productId));
-  };
-
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity < 1) {
-      removeFromCart(productId);
-      return;
-    }
-    setCartItems(prev =>
-      prev.map(item => (item.id === productId ? { ...item, quantity: newQuantity } : item))
-    );
-  };
-
-  const clearCart = () => {
-    setCartItems([]);
-  };
-
-  const cartTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  // Calculate final total (GST is calculated only on the food/items, not the delivery fee)
+  const grandTotal = subtotal + gstAmount + (deliveryError ? 0 : deliveryCharge);
 
   return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        cartTotal,
-        cartItemCount
-      }}
-    >
+    <CartContext.Provider value={{
+      cartItems, setCartItems,
+      pincode, setPincode,
+      subtotal, gstAmount, deliveryCharge, grandTotal,
+      deliveryError, DELIVERY_FEES
+    }}>
       {children}
     </CartContext.Provider>
   );
-}
-
-export const useCart = () => useContext(CartContext);
+};
