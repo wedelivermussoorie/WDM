@@ -25,6 +25,8 @@ import AccountDownloads from './pages/account/AccountDownloads'
 import AccountAddresses from './pages/account/AccountAddresses'
 import AccountDetails from './pages/account/AccountDetails'
 import AccountWishlist from './pages/account/AccountWishlist'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -70,6 +72,8 @@ function App() {
                     <Route path="wishlist" element={<AccountWishlist />} />
                   </Route>
                   <Route path="/product/:productId" element={<ProductPage />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms-of-service" element={<TermsOfService />} />
                 </Routes>
               </main>
             </div>

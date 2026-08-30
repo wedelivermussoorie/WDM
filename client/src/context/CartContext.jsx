@@ -3,6 +3,36 @@ import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
+// --- BUSINESS RULES ---
+const MINIMUM_ORDER_VALUE = 500;
+const GST_RATE = 0.18; // 18% GST (Now applied ONLY to delivery fee)
+
+// --- 4-TIER DELIVERY FEES ---
+const DELIVERY_TIER_1 = 100; // <= 1 km
+const DELIVERY_TIER_2 = 150; // 1 km to 3 km
+const DELIVERY_TIER_3 = 250; // 3 km to 5 km
+const DELIVERY_TIER_4 = 350; // Beyond 5 km
+const DEFAULT_DELIVERY = 150; // Fallback if no location is pinned yet
+
+// --- YOUR STORE COORDINATES (Jhula Ghar Mall Road) ---
+// Converted from 30° 27′ 36″ N, 78° 3′ 59″ E
+const STORE_LAT = 30.4600; 
+const STORE_LNG = 78.0664; 
+
+// Mathematical formula to calculate distance between two GPS coordinates in Kilometers
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; 
+}
+
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
   const { user } = useAuth();
@@ -10,7 +40,6 @@ export function CartProvider({ children }) {
   const cartKey = user ? `cartItems_${user.id || user._id}` : 'cartItems_guest';
 
   useEffect(() => {
-    // Load cart from local storage on mount and when user changes
     const storedCart = localStorage.getItem(cartKey);
     if (storedCart) {
       setCartItems(JSON.parse(storedCart));
@@ -20,7 +49,6 @@ export function CartProvider({ children }) {
   }, [cartKey]);
 
   useEffect(() => {
-    // Save cart to local storage whenever it changes
     if (cartItems.length > 0) {
       localStorage.setItem(cartKey, JSON.stringify(cartItems));
     } else {
@@ -58,58 +86,51 @@ export function CartProvider({ children }) {
     setCartItems([]);
   };
 
-  const MINIMUM_ORDER_VALUE = 500;
-  const GST_RATE = 0.18;
-  const DELIVERY_TIER_1 = 30;
-  const DELIVERY_TIER_2 = 50;
-  const DELIVERY_TIER_3 = 80;
-  const DEFAULT_DELIVERY = 50;
-  const STORE_LAT = 30.4598;
-  const STORE_LNG = 78.0664;
-
-  function calculateDistance(lat1, lon1, lat2, lon2) {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
+  // --- CALCULATIONS ---
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Product Subtotal
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const gstAmount = Math.round(subtotal * GST_RATE);
-
+  
+  // --- DISTANCE-BASED DELIVERY CHARGE ---
   let deliveryCharge = 0;
-  if (subtotal > 0 && subtotal < MINIMUM_ORDER_VALUE) {
+  
+  if (subtotal > 0) {
     const shippingAddress = user?.addresses?.shipping;
+    
     if (shippingAddress?.latitude && shippingAddress?.longitude) {
+      // Calculate exact distance from store to customer
       const distance = calculateDistance(
-        STORE_LAT,
-        STORE_LNG,
-        parseFloat(shippingAddress.latitude),
+        STORE_LAT, 
+        STORE_LNG, 
+        parseFloat(shippingAddress.latitude), 
         parseFloat(shippingAddress.longitude)
       );
 
-      if (distance !== null && distance <= 2) {
+      // Apply the 4-Tier Pricing
+      if (distance <= 1) {
         deliveryCharge = DELIVERY_TIER_1;
-      } else if (distance !== null && distance <= 5) {
+      } else if (distance <= 3) {
         deliveryCharge = DELIVERY_TIER_2;
-      } else {
+      } else if (distance <= 5) {
         deliveryCharge = DELIVERY_TIER_3;
+      } else {
+        deliveryCharge = DELIVERY_TIER_4;
       }
     } else {
+      // Fallback if the user hasn't set their GPS pin yet
       deliveryCharge = DEFAULT_DELIVERY;
     }
   }
 
-  const finalTotal = subtotal + gstAmount + deliveryCharge;
+  // GST Calculated ONLY on the Delivery Fee
+  const gstAmount = deliveryCharge * GST_RATE;
+
+  // Final Total: Product Subtotal + Delivery Charge + GST on Delivery
+  const finalTotal = subtotal + deliveryCharge + gstAmount;
+  
+  // Minimum Order Check (User cannot checkout if subtotal is below ₹500)
   const isMinimumMet = subtotal >= MINIMUM_ORDER_VALUE;
-  const cartTotal = subtotal;
 
   return (
     <CartContext.Provider
@@ -119,7 +140,6 @@ export function CartProvider({ children }) {
         removeFromCart,
         updateQuantity,
         clearCart,
-        cartTotal,
         cartItemCount,
         subtotal,
         gstAmount,
