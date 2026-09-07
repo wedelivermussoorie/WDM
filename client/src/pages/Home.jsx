@@ -108,7 +108,6 @@ function Home() {
   return (
     <main className="w-full px-4 md:px-8 py-8 space-y-12">
       <QuickCategories categories={categories} />
-      <HeroBento firstCategory={categories[0]} />
 
       {categories.map(cat => {
         const prods = categoryProducts[cat.id] || []
