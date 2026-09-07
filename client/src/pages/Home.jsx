@@ -77,6 +77,44 @@ function ProductsSection({ title, actionLabel, actionPath, products }) {
   )
 }
 
+// ── Brand Banners ──────────────────────────────────────────────────────────
+function BrandBanners() {
+  const brands = [
+    {
+      id: 'chicago-pizza',
+      link: 'https://wedelivermussoorie.com/chicagopizza',
+      image: '/chicago-pizza.jpg',
+      alt: 'Chicago Pizza'
+    },
+    {
+      id: 'subway',
+      link: 'https://wedelivermussoorie.com/subway/',
+      image: '/subway.jpg',
+      alt: 'Subway'
+    },
+    {
+      id: 'belgian-waffle',
+      link: 'https://wedelivermussoorie.com/belgianwaffle/',
+      image: '/belgian-waffle.jpg',
+      alt: 'Belgian Waffle'
+    }
+  ]
+
+  return (
+    <section className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 w-full">
+      {brands.map(brand => (
+        <a key={brand.id} href={brand.link} className="block overflow-hidden rounded-xl shadow-md group">
+          <img 
+            src={brand.image} 
+            alt={brand.alt} 
+            className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        </a>
+      ))}
+    </section>
+  )
+}
+
 // ── Home Page ──────────────────────────────────────────────────────────────
 function Home() {
   const [categories, setCategories] = useState([])
@@ -108,6 +146,7 @@ function Home() {
   return (
     <main className="w-full px-4 md:px-8 py-8 space-y-12">
       <QuickCategories categories={categories} />
+      <BrandBanners />
 
       {categories.map(cat => {
         const prods = categoryProducts[cat.id] || []
