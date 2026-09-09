@@ -81,12 +81,6 @@ function ProductsSection({ title, actionLabel, actionPath, products }) {
 function BrandBanners() {
   const brands = [
     {
-      id: 'chicago-pizza',
-      link: 'https://wedelivermussoorie.com/chicagopizza',
-      image: '/chicago-pizza.jpg',
-      alt: 'Chicago Pizza'
-    },
-    {
       id: 'subway',
       link: 'https://wedelivermussoorie.com/subway/',
       image: '/subway.jpg',
@@ -97,6 +91,12 @@ function BrandBanners() {
       link: 'https://wedelivermussoorie.com/belgianwaffle/',
       image: '/belgian-waffle.jpg',
       alt: 'Belgian Waffle'
+    },
+    {
+      id: 'chicago-pizza',
+      link: 'https://wedelivermussoorie.com/chicagopizza',
+      image: '/chicago-pizza.jpg',
+      alt: 'Chicago Pizza'
     }
   ]
 
