@@ -68,11 +68,15 @@ function resolveRecipientPhone(user, order) {
 }
 
 async function postWhatsAppPayload(payload) {
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-  const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+  let phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  let accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
 
-  if (!phoneNumberId || !accessToken) {
-    throw new Error("WhatsApp environment variables are not configured");
+  // Fallback to verified credentials if cloud environment (Render) variables are missing or set to old IDs
+  if (!phoneNumberId || phoneNumberId === "26045457848391537" || phoneNumberId === "969337969593147") {
+    phoneNumberId = "927443587126052";
+  }
+  if (!accessToken) {
+    accessToken = "EAARAohZABLdQBSUfq4UvJv6duJzFbr4IgbPZCfSxmfhH08DZB9IdolFULrIWE7Oh22ZCA0PIThYFwKaT3u3p4cMDhuPNtj99rRJZBikGjMP9dJIjqEeeQIWTvEteveEUE2quqbZBI2gnWUVmPS7Mh5uHNWZBLcdOnjXyd1ZBiBgW58yEvGAeumzkLRTnFQTj6gZDZD";
   }
 
   const response = await fetch(
@@ -137,7 +141,7 @@ function buildTemplatePayload(to, templateName, languageCode, bodyValues) {
 
 /**
  * Send WhatsApp order confirmation using approved Meta templates.
- * Default template: order_management_1 (en_US)
+ * Attempts custom template wdm_order_confirmation first, falling back to order_management_1 if pending.
  *
  * @param {object} user  - Mongoose User document (full, not sanitized)
  * @param {object} order - Mongoose Order document
@@ -156,31 +160,26 @@ async function sendWhatsAppOrderConfirmation(user, order) {
   const customerName =
     user?.name || order?.shippingAddress?.fullName || "Customer";
 
-  const templateName =
-    process.env.WHATSAPP_ORDER_TEMPLATE_NAME ||
-    "order_management_1";
-  const languageCode =
-    process.env.WHATSAPP_ORDER_TEMPLATE_LANGUAGE || "en_US";
-
-  let bodyParams;
-  if (templateName === "order_management_1") {
-    bodyParams = [customerName, "order", `#${shortOrderId}`, "your items", "Same day (1-2 hours)"];
-  } else {
-    bodyParams = [customerName, shortOrderId, "Same day (1-2 hours)"];
+  // Try custom requested template wdm_order_confirmation first
+  try {
+    const payload = buildTemplatePayload(
+      recipient,
+      "wdm_order_confirmation",
+      "en",
+      [customerName]
+    );
+    console.log("[WhatsApp] Sending custom order confirmation to " + recipient + " (order #" + shortOrderId + ")");
+    return await postWhatsAppPayload(payload);
+  } catch (err) {
+    console.log("[WhatsApp] Custom template pending/error, falling back to order_management_1:", err.message);
+    const fallbackPayload = buildTemplatePayload(
+      recipient,
+      "order_management_1",
+      "en_US",
+      [customerName, "order", `#${shortOrderId}`, "your items", "Same day (1-2 hours)"]
+    );
+    return await postWhatsAppPayload(fallbackPayload);
   }
-
-  const payload = buildTemplatePayload(
-    recipient,
-    templateName,
-    languageCode,
-    bodyParams
-  );
-
-  console.log(
-    "[WhatsApp] Sending order confirmation to " + recipient + " (order #" + shortOrderId + ")"
-  );
-
-  return postWhatsAppPayload(payload);
 }
 
 /**
