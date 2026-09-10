@@ -2,8 +2,8 @@
  * WhatsApp Cloud API utility for We Deliver Mussoorie
  *
  * Phone number resolution order (first non-empty wins):
- *   1. order.shippingAddress.phone  — phone entered at checkout
- *   2. user.phone                   — phone registered with account
+ *   1. user.phone                   — phone registered with account
+ *   2. order.shippingAddress.phone  — phone entered at checkout
  *   3. user.addresses.shipping.phone — saved shipping address phone
  *   4. user.addresses.billing.phone  — saved billing address phone
  *
@@ -53,8 +53,8 @@ function normalizePhoneNumber(phone) {
  */
 function resolveRecipientPhone(user, order) {
   const candidates = [
-    order?.shippingAddress?.phone,          // 1. checkout address phone
-    user?.phone,                            // 2. account registration phone
+    user?.phone,                            // 1. account registration phone
+    order?.shippingAddress?.phone,          // 2. checkout address phone
     user?.addresses?.shipping?.phone,       // 3. saved shipping address phone
     user?.addresses?.billing?.phone,        // 4. saved billing address phone
   ];
