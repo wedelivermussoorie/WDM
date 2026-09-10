@@ -159,6 +159,9 @@ async function sendWhatsAppOrderConfirmation(user, order) {
   const shortOrderId = order._id.toString().slice(-8).toUpperCase();
   const customerName =
     user?.name || order?.shippingAddress?.fullName || "Customer";
+  const address = order?.shippingAddress?.street
+    ? `${order.shippingAddress.street}, ${order.shippingAddress.city || "Mussoorie"}`
+    : "Mussoorie";
 
   // Try custom requested template wdm_order_confirmation first
   try {
@@ -171,12 +174,12 @@ async function sendWhatsAppOrderConfirmation(user, order) {
     console.log("[WhatsApp] Sending custom order confirmation to " + recipient + " (order #" + shortOrderId + ")");
     return await postWhatsAppPayload(payload);
   } catch (err) {
-    console.log("[WhatsApp] Custom template pending/error, falling back to order_management_1:", err.message);
+    console.log("[WhatsApp] Custom template pending/error, using approved wdm_delivery_update fallback:", err.message);
     const fallbackPayload = buildTemplatePayload(
       recipient,
-      "order_management_1",
-      "en_US",
-      [customerName, "order", `#${shortOrderId}`, "your items", "Same day (1-2 hours)"]
+      "wdm_delivery_update",
+      "en",
+      [customerName, `#${shortOrderId}`, "We Deliver Mussoorie", "Immediate", address]
     );
     return await postWhatsAppPayload(fallbackPayload);
   }
