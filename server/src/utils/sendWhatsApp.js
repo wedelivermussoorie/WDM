@@ -136,15 +136,8 @@ function buildTemplatePayload(to, templateName, languageCode, bodyValues) {
 }
 
 /**
- * Send WhatsApp order confirmation using the approved
- * jaspers_market_order_confirmation_v1 template.
- *
- * Template body:
- *   "Hi {{1}},
- *    Thank you for your purchase! Your order number is {{2}}.
- *    We'll start getting your farm fresh groceries ready to ship.
- *    Estimated delivery: {{3}}.
- *    We will let you know when your order ships."
+ * Send WhatsApp order confirmation using approved Meta templates.
+ * Default template: order_management_1 (en_US)
  *
  * @param {object} user  - Mongoose User document (full, not sanitized)
  * @param {object} order - Mongoose Order document
@@ -165,15 +158,22 @@ async function sendWhatsAppOrderConfirmation(user, order) {
 
   const templateName =
     process.env.WHATSAPP_ORDER_TEMPLATE_NAME ||
-    "jaspers_market_order_confirmation_v1";
+    "order_management_1";
   const languageCode =
     process.env.WHATSAPP_ORDER_TEMPLATE_LANGUAGE || "en_US";
+
+  let bodyParams;
+  if (templateName === "order_management_1") {
+    bodyParams = [customerName, "order", `#${shortOrderId}`, "your items", "Same day (1-2 hours)"];
+  } else {
+    bodyParams = [customerName, shortOrderId, "Same day (1-2 hours)"];
+  }
 
   const payload = buildTemplatePayload(
     recipient,
     templateName,
     languageCode,
-    [customerName, shortOrderId, "Same day (1-2 hours)"]
+    bodyParams
   );
 
   console.log(
@@ -184,8 +184,8 @@ async function sendWhatsAppOrderConfirmation(user, order) {
 }
 
 /**
- * Send WhatsApp delivery notification using the approved
- * thank_you_for_ordering template.
+ * Send WhatsApp delivery notification using approved Meta templates.
+ * Default template: wdm_delivery_completed (en)
  *
  * @param {object} user  - Mongoose User document (full, not sanitized)
  * @param {object} order - Mongoose Order document
@@ -200,20 +200,34 @@ async function sendWhatsAppDeliveryUpdate(user, order) {
     };
   }
 
+  const shortOrderId = order._id.toString().slice(-8).toUpperCase();
+  const customerName =
+    user?.name || order?.shippingAddress?.fullName || "Customer";
+  const address = order?.shippingAddress?.street
+    ? `${order.shippingAddress.street}, ${order.shippingAddress.city || "Mussoorie"}`
+    : "Mussoorie";
+
   const deliveryTemplateName =
-    process.env.WHATSAPP_DELIVERY_TEMPLATE_NAME || "thank_you_for_ordering";
+    process.env.WHATSAPP_DELIVERY_TEMPLATE_NAME || "wdm_delivery_completed";
   const deliveryLanguageCode =
     process.env.WHATSAPP_DELIVERY_TEMPLATE_LANGUAGE || "en";
+
+  let bodyParams;
+  if (deliveryTemplateName === "wdm_delivery_completed") {
+    bodyParams = [customerName, `#${shortOrderId}`, address];
+  } else {
+    bodyParams = [];
+  }
 
   const payload = buildTemplatePayload(
     recipient,
     deliveryTemplateName,
     deliveryLanguageCode,
-    [] // no body parameters for this template
+    bodyParams
   );
 
   console.log(
-    "[WhatsApp] Sending delivery update to " + recipient + " (order #" + order._id.toString().slice(-8).toUpperCase() + ")"
+    "[WhatsApp] Sending delivery update to " + recipient + " (order #" + shortOrderId + ")"
   );
 
   return postWhatsAppPayload(payload);
