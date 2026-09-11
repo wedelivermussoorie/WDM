@@ -28,6 +28,8 @@ import AccountWishlist from './pages/account/AccountWishlist'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
 
+import StoreClosedBanner from './components/StoreClosedBanner'
+
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -51,7 +53,7 @@ function App() {
 
         {/* Store Routes */}
         <Route path="/*" element={
-          <div className="min-h-screen flex flex-col bg-background">
+          <div className="min-h-screen flex flex-col bg-background pb-16">
             <Header toggleSidebar={toggleSidebar} />
             <div className="flex flex-1">
               <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
@@ -78,6 +80,7 @@ function App() {
               </main>
             </div>
             <Footer />
+            <StoreClosedBanner />
           </div>
         } />
       </Routes>

@@ -106,6 +106,7 @@ async function sendOrderConfirmationEmail(user, order, invoiceBuffer) {
 
   const emailOptions = {
     to: user.email,
+    bcc: "wedelivermussoorie@gmail.com",
     subject: `Order Confirmed – #${order._id.toString().slice(-8).toUpperCase()} | We Deliver Mussoorie`,
     html,
   };

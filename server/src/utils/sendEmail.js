@@ -9,13 +9,16 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * @param {string} options.subject - Email subject
  * @param {string} options.html - HTML body
  */
-async function sendEmail({ to, subject, html, attachments }) {
+async function sendEmail({ to, cc, bcc, subject, html, attachments }) {
   const payload = {
     from: "We Deliver Mussoorie <noreply@wedelivermussoorie.com>",
     to,
     subject,
     html,
   };
+
+  if (cc) payload.cc = cc;
+  if (bcc) payload.bcc = bcc;
 
   if (attachments) {
     payload.attachments = attachments;

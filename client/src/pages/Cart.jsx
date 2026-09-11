@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
+import { isStoreOpen } from '../utils/storeHours'
 
 function loadScript(src) {
   return new Promise((resolve) => {
@@ -29,8 +30,14 @@ function Cart() {
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const storeOpen = isStoreOpen()
 
   const handleCheckout = async () => {
+    if (!storeOpen) {
+      setError('Our store is currently closed. Order booking is available daily from 9:00 AM to 11:30 PM IST.')
+      return
+    }
+
     if (!isAuthenticated) {
       navigate('/login')
       return
@@ -264,7 +271,13 @@ function Cart() {
                 <span>Total Amount</span>
                 <span>{formatInr(finalTotal)}</span>
               </div>
-              {!isMinimumMet && (
+              {!storeOpen && (
+                <div className="text-center text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 py-2.5 px-3 rounded-lg text-label-sm font-bold mt-4 flex items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">bedtime</span>
+                  <span>Store closed for orders (9:00 AM – 11:30 PM IST)</span>
+                </div>
+              )}
+              {storeOpen && !isMinimumMet && (
                 <div className="text-center text-error bg-error-container text-on-error-container py-2 rounded-lg text-label-sm font-bold mt-4">
                   Add {formatInr(remainingToMinimum)} more to reach the minimum order value
                 </div>
@@ -278,16 +291,18 @@ function Cart() {
             
             <button 
               className={`w-full py-4 rounded-xl font-bold text-[16px] border-none transition-all flex justify-center items-center gap-2 ${
-                loading || !isMinimumMet ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary text-on-primary hover:brightness-95 cursor-pointer shadow-md'
+                loading || !isMinimumMet || !storeOpen ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'bg-primary text-on-primary hover:brightness-95 cursor-pointer shadow-md'
               }`} 
               onClick={handleCheckout} 
-              disabled={loading || !isMinimumMet}
+              disabled={loading || !isMinimumMet || !storeOpen}
             >
               {loading ? (
                 <>
                   <span className="material-symbols-outlined animate-spin text-[20px]">refresh</span>
                   Processing...
                 </>
+              ) : !storeOpen ? (
+                'Store Closed'
               ) : (
                 'Proceed to Checkout'
               )}

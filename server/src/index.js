@@ -19,6 +19,7 @@ const Product = require("./models/Product");
 const Category = require("./models/Category");
 const Order = require("./models/Order");
 const { protect } = require("./middleware/authMiddleware");
+const { isStoreOpen } = require("./utils/storeHours");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
 
@@ -161,6 +162,12 @@ app.get("/api/products/:id", async (req, res) => {
 // Order Endpoint (COD)
 app.post("/api/orders", protect, async (req, res) => {
   try {
+    if (!isStoreOpen()) {
+      return res.status(400).json({ 
+        message: "Store is currently closed for orders. Our operating hours are 9:00 AM to 11:30 PM IST." 
+      });
+    }
+
     const { items, totalAmount, shippingAddress, paymentMethod } = req.body;
 
     if (!items || items.length === 0) {
@@ -227,6 +234,12 @@ app.post("/api/orders", protect, async (req, res) => {
 // Razorpay Generate Order ID
 app.post("/api/orders/razorpay", protect, async (req, res) => {
   try {
+    if (!isStoreOpen()) {
+      return res.status(400).json({ 
+        message: "Store is currently closed for orders. Our operating hours are 9:00 AM to 11:30 PM IST." 
+      });
+    }
+
     const { amount } = req.body;
     if (!amount) return res.status(400).json({ message: "Amount is required" });
 
@@ -254,6 +267,12 @@ app.get("/api/razorpay/key", protect, (req, res) => {
 // Razorpay Verify Signature and Save Order
 app.post("/api/orders/verify", protect, async (req, res) => {
   try {
+    if (!isStoreOpen()) {
+      return res.status(400).json({ 
+        message: "Store is currently closed for orders. Our operating hours are 9:00 AM to 11:30 PM IST." 
+      });
+    }
+
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, items, totalAmount, shippingAddress } = req.body;
 
     const sign = razorpay_order_id + "|" + razorpay_payment_id;

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useCart } from '../context/CartContext' 
+import { isStoreOpen } from '../utils/storeHours'
 
 function formatInr(value) {
   if (typeof value !== 'number') return ''
@@ -22,6 +23,8 @@ export default function CartDrawer({ open, onClose, onViewCart }) {
     isMinimumMet, 
     MINIMUM_ORDER_VALUE 
   } = useCart();
+
+  const storeOpen = isStoreOpen();
 
   useEffect(() => {
     if (!open) return
@@ -105,7 +108,7 @@ export default function CartDrawer({ open, onClose, onViewCart }) {
               <span>{deliveryCharge > 0 ? formatInr(deliveryCharge) : 'Free'}</span>
             </div>
 
-            {/* CHANGED: Clarified that GST is only on delivery */}
+            {/* GST */}
             <div className="flex justify-between items-center text-[14px] text-on-surface-variant">
               <span>GST (18% on Delivery)</span>
               <span>{formatInr(gstAmount)}</span>
@@ -116,8 +119,16 @@ export default function CartDrawer({ open, onClose, onViewCart }) {
               <span className="font-bold text-[20px] text-primary">{formatInr(finalTotal)}</span>
             </div>
 
+            {/* Store Closed Warning */}
+            {!storeOpen && (
+              <div className="bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 p-3 rounded-xl text-sm mb-2 text-center font-semibold flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">bedtime</span>
+                <span>Store closed for orders (9:00 AM – 11:30 PM IST)</span>
+              </div>
+            )}
+
             {/* Minimum Order Warning */}
-            {!isMinimumMet && (
+            {storeOpen && !isMinimumMet && (
               <div className="text-red-500 text-sm mb-2 text-center font-medium">
                 Add {formatInr(MINIMUM_ORDER_VALUE - subtotal)} more to reach the minimum order value.
               </div>
@@ -125,9 +136,9 @@ export default function CartDrawer({ open, onClose, onViewCart }) {
 
             <button 
               type="button" 
-              disabled={!isMinimumMet}
+              disabled={!isMinimumMet || !storeOpen}
               className={`w-full py-4 rounded-xl font-bold text-[16px] border-none flex items-center justify-center gap-2 transition-all shadow-md ${
-                isMinimumMet 
+                isMinimumMet && storeOpen
                   ? 'bg-primary text-on-primary cursor-pointer hover:brightness-95' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
